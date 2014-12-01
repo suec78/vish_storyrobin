@@ -3,11 +3,12 @@
     <ul class="ul-content">
 
 
-<!-- legal notice-->
+<!-- legal notice
 
       <li class="item_footer">
         <a class="style_link_footer" href="/legal_notice"><%= t('conditions.other') %></a>     
       </li>
+-->   
 
 <!-- legal notice-->
 
@@ -17,9 +18,6 @@
           <i class="icon-angle-up"></i>
         </div>  
 
-
-
-
         <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
           
           <li class="">
@@ -28,12 +26,7 @@
               <span><%= t('overview_title') %></span>
             </a>
           </li>
-          <li class="">
-            <a target="_blank" href="https://www.youtube.com/channel/UCo-73n6eZBWNBs2gvKLyBhQ">
-              <i class="icon-youtube-sign"> </i>
-              <span><%= t('youtube') %></span>
-            </a>
-          </li>
+
           <!--<li class="">
             <%= link_to faq_path do %>
               <i class="icon-question-sign"> </i> 
@@ -41,19 +34,12 @@
             <% end %>
           </li>-->
 
-          <li class="">
-            <%= link_to user_manual_path do %>
-              <i class='icon-download'> </i> 
-              <span><%= t('help_manual')%>   </span>    
-            <% end %>
-          </li>
-
-          <!--<li class="">
-            <%= link_to help_path do %>
+          <li class="">  
+	 		<a href="/legal_notice">
               <i class="icon-question-sign"> </i> 
-              <span><%=t('help_page')%></span>
-            <% end %>
-          </li>-->
+              <span>Term of Use</span>
+            </a>
+          </li>
         </ul>
       </li>
 
@@ -75,19 +61,18 @@
       </li>
 <!-- contact-->
       <li>
-         <%=mail_to('virtual.science.hub@gmail.com', t('contact.footer'), :encode => :javascript, :class=> "style_link_footer") %>
+         <a href="https://storyrobin.wufoo.com/forms/mlg4xp20uicop4/">Contact Us</a>
       </li>
 <!-- social-->
       <li class="social-img">
-        <%= link_to image_tag("footer/facebook-logo.png",  :class=> "social-img" ), "https://www.facebook.com/VirtualScienceHub", :target=> "_blank" %>
-        <%= link_to image_tag("footer/twitter-logo.png",  :class=> "social-img " ), "https://twitter.com/ViSH_portal", :target=> "_blank" %>
+        <%= link_to image_tag("footer/facebook-logo.png",  :class=> "social-img" ), "https://www.facebook.com/storyrobin", :target=> "_blank" %>
+        <%= link_to image_tag("footer/twitter-logo.png",  :class=> "social-img " ), "https://twitter.com/storyrobin", :target=> "_blank" %>
       </li>
 <!-- global-->
       <li>
-        <%= link_to image_tag("footer/global.png",  :class=> "imgnoradio" ), "http://www.globalexcursion-project.eu", :target=> "_blank"  %>
+        Copyright &copy; <%= Time.now.year %> StoryRobin Inc. All rights reserved.
       </li>
-
-
     </ul>
-  </nav>
+  </nav>   
+
 </footer>
