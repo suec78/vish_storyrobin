@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js demo-1">
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"> 
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+		<title>StoryRobin eBooks Series: Claude Monet</title>
+		<meta name="description" content="Monet, ebook, art docent" />
+		<meta name="keywords" content="art, books, ebooks, art docent, monet, claude monet, education" />
+		<meta name="author" content="StoryRobin.com" />
+		<link rel="stylesheet" type="text/css" href="css/default.css" />
+		<link rel="stylesheet" type="text/css" href="css/bookblock.css" />
+		<!-- custom demo style -->
+		<link rel="stylesheet" type="text/css" href="css/demo1.css" />
+		<script src="js/modernizr.custom.js"></script>
+	</head>
+	<body>
+		<div class="container">
+			<!-- Top Navigation -->
+			<div class="codrops-top">    
+			</div>
+			<div class="main clearfix">
+				<div class="bb-custom-wrapper">
+					<div id="logo"><a href="http://www.storyrobin.com/ibooks"><img src="monet/storyrobin.png" /> </a> </div>                                                                                  
+					<nav>  
+						<a id="bb-nav-first" href="#" class="bb-custom-icon bb-custom-icon-first"></a>
+						<a id="bb-nav-prev" href="#" class="bb-custom-icon bb-custom-icon-arrow-left"></a>
+						<a id="bb-nav-next" href="#" class="bb-custom-icon bb-custom-icon-arrow-right"></a>
+						<a id="bb-nav-last" href="#" class="bb-custom-icon bb-custom-icon-last"> </a>
+						<div id="title">  Claude   Monet  </div>
+						
+					</nav>        
+					<div id="bb-bookblock" class="bb-bookblock"> 
+                        <div class="bb-item">
+							<img src="monet/monet0.png" />
+						</div>
+						<div class="bb-item">
+							<img src="monet/monet1.jpg" />
+						</div>
+						<div class="bb-item">
+							<img src="monet/monet2.jpg" />
+						</div>
+						<div class="bb-item">
+							<img src="monet/monet3.jpg" />
+						</div>
+						<div class="bb-item">
+							<img src="monet/monet4.jpg" />
+						</div>
+						<div class="bb-item">
+							<img src="monet/monet5.jpg" />
+						</div>    
+						<div class="bb-item"> <img src="monet/monet6.jpg" />  </div> 
+						<div class="bb-item"> <img src="monet/monet7.jpg" />  </div>
+						<div class="bb-item"> <img src="monet/monet8.jpg" />  </div>
+						<div class="bb-item"> <img src="monet/monet9.jpg" />  </div>
+						<div class="bb-item"> <img src="monet/monet10.jpg" />  </div>
+						<div class="bb-item"> <img src="monet/monet11.jpg" />  </div>
+						<div class="bb-item"> <img src="monet/monet12.jpg" />  </div>
+						<div class="bb-item"> <img src="monet/monet13.jpg" />  </div>
+						<div class="bb-item"> <img src="monet/monet14.jpg" />  </div>
+						<div class="bb-item"> <img src="monet/monet15.jpg" />  </div>
+						<div class="bb-item"> <img src="monet/monet16.jpg" />  </div>
+						<div class="bb-item"> <img src="monet/monet17.jpg" />  </div>
+						<div class="bb-item"> <img src="monet/monet18.jpg" />  </div>
+						<div class="bb-item"> <img src="monet/monet19.jpg" />  </div>
+						<div class="bb-item"> <img src="monet/monet20.jpg" />  </div>
+						<div class="bb-item"> <img src="monet/monet21.jpg" />  </div>  
+						<div class="bb-item"> <img src="monet/monet22.jpg" />  </div>
+						<div class="bb-item"> <img src="monet/monet23.jpg" />  </div>
+						<div class="bb-item"> <img src="monet/monet24.jpg" />  </div>
+						<div class="bb-item"> <img src="monet/monet25.jpg" />  </div>
+						<div class="bb-item"> <img src="monet/monet26.jpg" />  </div>
+						<div class="bb-item"> <img src="monet/monet27.jpg" />  </div>
+						<div class="bb-item"> <img src="monet/monet28.jpg" />  </div>
+						<div class="bb-item"> <img src="monet/monet29.jpg" />  </div> 
+						<div class="bb-item"> <img src="monet/monet30.jpg" />  </div> 
+						<div class="bb-item"> <img src="monet/monet31.jpg" />  </div>
+						<div class="bb-item"> <img src="monet/monet32.jpg" />  </div>
+						<div class="bb-item"> <img src="monet/monet33.jpg" />  </div>
+						
+						
+						
+					</div>
+
+				</div>
+			</div>
+		</div><!-- /container -->
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+		<script src="js/jquerypp.custom.js"></script>
+		<script src="js/jquery.bookblock.js"></script>
+		<script>
+			var Page = (function() {
+				
+				var config = {
+						$bookBlock : $( '#bb-bookblock' ),
+						$navNext : $( '#bb-nav-next' ),
+						$navPrev : $( '#bb-nav-prev' ),
+						$navFirst : $( '#bb-nav-first' ),
+						$navLast : $( '#bb-nav-last' )
+					},
+					init = function() {
+						config.$bookBlock.bookblock( {
+							speed : 800,
+							shadowSides : 0.8,
+							shadowFlip : 0.7
+						} );
+						initEvents();
+					},
+					initEvents = function() {
+						
+						var $slides = config.$bookBlock.children();
+
+						// add navigation events
+						config.$navNext.on( 'click touchstart', function() {
+							config.$bookBlock.bookblock( 'next' );
+							return false;
+						} );
+
+						config.$navPrev.on( 'click touchstart', function() {
+							config.$bookBlock.bookblock( 'prev' );
+							return false;
+						} );
+
+						config.$navFirst.on( 'click touchstart', function() {
+							config.$bookBlock.bookblock( 'first' );
+							return false;
+						} );
+
+						config.$navLast.on( 'click touchstart', function() {
+							config.$bookBlock.bookblock( 'last' );
+							return false;
+						} );
+						
+						// add swipe events
+						$slides.on( {
+							'swipeleft' : function( event ) {
+								config.$bookBlock.bookblock( 'next' );
+								return false;
+							},
+							'swiperight' : function( event ) {
+								config.$bookBlock.bookblock( 'prev' );
+								return false;
+							}
+						} );
+
+						// add keyboard events
+						$( document ).keydown( function(e) {
+							var keyCode = e.keyCode || e.which,
+								arrow = {
+									left : 37,
+									up : 38,
+									right : 39,
+									down : 40
+								};
+
+							switch (keyCode) {
+								case arrow.left:
+									config.$bookBlock.bookblock( 'prev' );
+									break;
+								case arrow.right:
+									config.$bookBlock.bookblock( 'next' );
+									break;
+							}
+						} );
+					};
+
+					return { init : init };
+
+			})();
+		</script>
+		<script>
+				Page.init();
+		</script>
+	</body>
+</html>                    
+

@@ -37,6 +37,7 @@ Vish::Application.routes.draw do
   match 'faq' => 'static#overview'
   match 'help' => 'static#overview'
   match 'legal_notice' => 'static#legal_notice'
+  match 'privacy' => 'static#privacy'
   #Download the user manual and count the number of downloads
   match 'user_manual' => 'static#download_user_manual'
   
