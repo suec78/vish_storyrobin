@@ -4,7 +4,7 @@ gem 'rails', '= 3.2.14'
 
 #Database Adapters
 # gem 'sqlite3', '= 1.3.9'
-# gem 'pg', '= 0.17.1'
+gem 'pg', '= 0.17.1'
 # gem 'mysql2', '= 0.3.16'
 gem 'mysql2'
 
