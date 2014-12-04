@@ -11,7 +11,12 @@
     <%= f.submit t('document.upload'), :id=>"" ,:class => "contribution", :disabled => true %>
   <% end %>
 
-  <button class="btn btn-primary btn_show_upload"><%= t('resource.one')%></button>
+    <% if !wa_assignment.nil?%>
+  	<button class="btn btn-primary btn_show_upload"><%= t('resource.picture')%></button>
+    <% else %>
+  	<button class="btn btn-primary btn_show_upload"><%= t('resource.one')%></button>
+    <% end %>
+
   <button class="btn btn_hidden_upload"><i class="icon-chevron-left"></i></button>
 
   <% unless editMode %>

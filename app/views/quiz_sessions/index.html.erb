@@ -24,7 +24,7 @@
                 x
               </button>
               <p class="creation_date">
-                <%=t('quiz.createdAt')%> <%= q.created_at.strftime("%d-%m-%Y %H:%M UTC") %>
+                <%=t('quiz.createdAt')%> <%= q.created_at.strftime("%m-%d-%Y %H:%M UTC") %>
               </p>
             </li>
           <% end %>
@@ -53,9 +53,9 @@
                 <i class="icon-edit"></i>
               </button>
               <p class="creation_date">
-                <%=t('quiz.openPeriod')%> <%= q.created_at.strftime("%d-%m-%Y %H:%M UTC") %>
+                <%=t('quiz.openPeriod')%> <%= q.created_at.strftime("%m-%d-%Y %H:%M UTC") %>
                 <%if q.closed_at%>
-                 - <%= q.closed_at.strftime("%d-%m-%Y %H:%M UTC") %>
+                 - <%= q.closed_at.strftime("%m-%d-%Y %H:%M UTC") %>
                 <% end %>
               </p>
             </li>

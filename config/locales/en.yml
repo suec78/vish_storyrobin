@@ -326,7 +326,7 @@ en:
     overview11: "Cloned and modified or enriched by any other member of the community."
     overview12: "Etc."
     overview13: "Excursions can be added to a "
-    overview14: "catalogue of excursions"
+    overview14: "catalog of excursions"
     overview15: " where they appear classified by topic. The initial focus of the StoryRobin was on science, but it is being used now in many other areas."
     overview16: "The Community of StoryRobin registered users."
     overview17: "Excursions are public objects, which can be freely reused in the classroom, blogs or LMSs by any person having access to the StoryRobin with a standard Internet access. But to create or modify excursions a user must register in the StoryRobin and become a member of the community. "
@@ -683,7 +683,7 @@ en:
     launch: "Launch"
     room_name: "Room name"
   navigation:
-    catalogue: "Catalogue"
+    catalogue: "Catalog"
     home: "Home"
     mynetwork: "My network"
   no_bio: "This user has not uploaded a biography."
@@ -813,6 +813,7 @@ en:
     my: "my"
     net: "network"
     one: "resource"
+    picture: "Picture"
     other: "resources"
     title:
       one: "resource"
@@ -939,7 +940,7 @@ en:
             add_image: "Upload"
             add_writing: "Writing"
             available_contributions:
-                document: "Illustrations"
+                document: "Picture"
                 title: "Available contributions"
                 writing: "Writing"
             content: "Content"
