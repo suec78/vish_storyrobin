@@ -445,6 +445,9 @@ namespace :fix do
     system("rm -rf tmp/externalAvatars")
     system("mkdir -p tmp/externalAvatars")
 
+    #Set a specific owner
+    owner = User.find_by_email("virtual.science.hub+1@gmail.com")
+
     Excursion.record_timestamps=false
     ActivityObject.record_timestamps=false
 
@@ -464,7 +467,8 @@ namespace :fix do
         end
       else
         #download the avatar
-        newAvatarURL = downloadAvatar(oldAvatarURL,e.owner,index);
+        owner = owner || e.owner
+        newAvatarURL = downloadAvatar(oldAvatarURL,owner,index);
       end
       
       eJson = JSON(e.json)
@@ -476,20 +480,25 @@ namespace :fix do
     Excursion.record_timestamps=true
     ActivityObject.record_timestamps=true
 
-    # system("rm -rf tmp/externalAvatars")
+    system("rm -rf tmp/externalAvatars")
 
     printTitle("Task Finished")
   end
 
   def downloadAvatar(pictureURL,owner,index)
-    pictureURI = URI.parse(pictureURL)
-    fileName = index.to_s + "_" + File.basename(pictureURI.path)
-    filePath = "tmp/externalAvatars/" + fileName
-    pictureURL = URI.encode(pictureURL)
-    command = "wget " + pictureURL + " --output-document='" + filePath + "'"
-    system(command)
-
-    if !File.exist?(filePath) or File.zero?(filePath)
+    begin
+      pictureURI = URI.parse(pictureURL)
+      fileName = index.to_s + "_" + File.basename(pictureURI.path)
+      filePath = "tmp/externalAvatars/" + fileName
+      pictureURL = URI.encode(pictureURL)
+      command = "wget " + pictureURL + " --output-document='" + filePath + "'"
+      system(command)
+    rescue => e
+      filePath = nil
+      fileName = index.to_s + "_default"
+    end
+    
+    if filePath.nil? or !File.exist?(filePath) or File.zero?(filePath)
       filePath = Rails.root.to_s + '/app/assets/images/logos/original/ao-default.png'
     end
 
@@ -500,7 +509,15 @@ namespace :fix do
     pic.user_author_id = owner.id
     pic.scope = 1
     pic.file = File.open(filePath, "r")
-    pic.save!
+
+    begin
+      pic.save!
+    rescue => e
+      #Corrupted (but downloaded) images
+      filePath = Rails.root.to_s + '/app/assets/images/logos/original/ao-default.png'
+      pic.file = File.open(filePath, "r")
+      pic.save!
+    end
 
     return pic.getAvatarUrl
   end
