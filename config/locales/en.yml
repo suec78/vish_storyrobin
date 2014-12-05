@@ -528,7 +528,7 @@ en:
       videoconference: "Videoconference"
   excursion:
     actions:
-      add: "Add excursion"
+      add: "Add Excursion"
       bookmark: "bookmark"
       clone: "clone"
       delete: "delete"
@@ -585,7 +585,7 @@ en:
     newnet_html: "Here you will see the excursions created by users you are following. Find some users to follow <a href='/search?type=user'>here</a>."
     newfav_html: "You have no favorite excursions yet. Mark any excursion as favorite by clicking the star icon <img src='/assets/icons/star-off.png'>"
     one: "excursion"
-    other: "excursions"
+    other: "Excursions"
     others: "others excursions"
     session_start: "start session"
     suggestion:
@@ -733,6 +733,7 @@ en:
     degrade: "Degrade to user"
     edit: "Edit profile"
     profile: "profile"
+    one: "My StoryRobin"
     promote: "Promote to admin"
     occupation:
       label: "Expertise"
@@ -804,7 +805,7 @@ en:
     title: "Resources"
   resource:
     actions:
-      add: "Add resource"
+      add: "Add Picture/File"
     empty: "You"
     network: "my network resources"
     newmy_html: "You have not uploaded any resources yet. You can add a new one by clicking on the upload button or on this "
@@ -814,7 +815,7 @@ en:
     net: "network"
     one: "resource"
     picture: "Picture"
-    other: "resources"
+    other: "Resources"
     title:
       one: "resource"
       other: "resources"
