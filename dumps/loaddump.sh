@@ -27,6 +27,6 @@ then
     exit 1
 fi
 
-sudo -u postgres dropdb vish_production
-sudo -u postgres createdb vish_production
-sudo -u postgres psql vish_production < $dumpFile
+sudo -u postgres dropdb vish_storyrobin_production
+sudo -u postgres createdb vish_storyrobin_production
+sudo -u postgres psql vish_storyrobin_production < $dumpFile
