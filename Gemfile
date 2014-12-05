@@ -4,7 +4,7 @@ gem 'rails', '= 3.2.14'
 
 #Database Adapters
 # gem 'sqlite3', '= 1.3.9'
-# gem 'pg', '= 0.17.1'
+gem 'pg', '= 0.17.1'
 # gem 'mysql2', '= 0.3.16'
 gem 'mysql2'
 
@@ -60,7 +60,7 @@ if ENV['FORCE_LOCAL_SS']
     gem 'social_stream-events'
   end
 else
-  git 'git://github.com/ging/social_stream.git', branch: "vish", ref: "dfd1c230fe41241564a89dfc00f7578cd184fd47" do
+  git 'git://github.com/ging/social_stream.git', branch: "vish", ref: "33c1b805d1bfd7cf0b85392de73be1f416dba099" do
     gem 'social_stream-base'
     gem 'social_stream-documents'
     gem 'social_stream-linkser'
