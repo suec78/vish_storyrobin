@@ -130,6 +130,8 @@ es:
       user: "Usuarios"
       video: "Videos"
       webapp: "Aplicaciones Web"
+      workshop: "Talleres"
+      writing: "Textos"
       zipfile: "Ficheros ZIP"
     instances:
       add_instance: "Añadir Instancia"
@@ -180,6 +182,7 @@ es:
         music: "Música"
         naturalScience: "Ciencias Naturales"
         physics: "Física"
+        science: "Ciencia"
         technology: "Tecnología"
     extras:
         learning: "aprendizaje"

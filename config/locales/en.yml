@@ -131,6 +131,8 @@ en:
       user: "Users"
       video: "Videos"
       webapp: "Web Applications"
+      workshop: "Workshops"
+      writing: "Writings"
       zipfile: "ZIP files"
     instances:
       add_instance: "Add Instance"
@@ -182,6 +184,7 @@ en:
         music: "Music"
         naturalScience: "Natural Sciences"
         physics: "Physics"
+        science: "Science"
         technology: "Technology"
     extras:
         eLearning: "e-Learning"

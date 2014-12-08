@@ -2,7 +2,7 @@
 #
 development:
   adapter: mysql2
-  database: vish_development
+  database: vish_storyrobin_development
   encoding: utf8
   username: root
   password:
@@ -17,7 +17,7 @@ development:
 #  host: localhost
 #  username: postgres
 #  password: #{password}
-#  database: vish_development
+#  database: vish_storyrobin_development
 #  pool: 5
 
 
@@ -26,7 +26,7 @@ development:
 # Do not set this db to the same as development or production.
 test:
   adapter: mysql2
-  database: vish_test
+  database: vish_storyrobin_test
   username: root
   password:
   socket: /var/run/mysqld/mysqld.sock
@@ -34,7 +34,7 @@ test:
 
 production:
   adapter: mysql2
-  database: vish_production
+  database: vish_storyrobin_production
   username: root
   password:
   socket: /var/run/mysqld/mysqld.sock
