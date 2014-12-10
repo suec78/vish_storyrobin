@@ -5654,18 +5654,9 @@ window.Chart = function(context, options) {
     var xPosition = 0;
     var yPosition = 0;
     while(e) {
-      xPosition += e.offsetLeft + e.clientLeft;
-      yPosition += e.offsetTop + e.clientTop;
+      xPosition += e.offsetLeft - e.scrollLeft + e.clientLeft;
+      yPosition += e.offsetTop - e.scrollTop + e.clientTop;
       e = e.offsetParent
-    }
-    if(window.pageXOffset > 0 || window.pageYOffset > 0) {
-      xPosition -= window.pageXOffset;
-      yPosition -= window.pageYOffset
-    }else {
-      if(document.body.scrollLeft > 0 || document.body.scrollTop > 0) {
-        xPosition -= document.body.scrollLeft;
-        yPosition -= document.body.scrollTop
-      }
     }
     return{x:xPosition, y:yPosition}
   }
@@ -14666,11 +14657,12 @@ VISH.Editor.Presentation = function(V, $, undefined) {
   };
   var _generateSlideScaffold = function(index, element, options) {
     var slide = {};
+    var element = element || {};
     slide.id = "article" + index;
     slide.type = V.Constant.STANDARD;
     var defaultTemplate = "t10";
     if(element.template) {
-      slide.template = options.template
+      slide.template = element.template
     }else {
       if(options && options.template) {
         slide.template = options.template
@@ -14678,8 +14670,10 @@ VISH.Editor.Presentation = function(V, $, undefined) {
         slide.template = defaultTemplate
       }
     }
+    if(element.type = V.Constant.QUIZ) {
+      slide.containsQuiz = true
+    }
     slide.elements = [];
-    var element = element || {};
     element.id = slide.id + "_zone1";
     switch(slide.template) {
       case "t2":
@@ -15467,7 +15461,9 @@ VISH.Editor.Flashcard = function(V, $, undefined) {
     $("#subslides_list").find("div.draggable_sc_div").show()
   };
   var unloadSlideset = function(fc) {
-    _savePoisToDom(fc);
+    if(!V.Editor.Renderer.isRendering()) {
+      _savePoisToDom(fc)
+    }
     $("#subslides_list").find("div.draggable_sc_div[ddend='background']").hide()
   };
   var beforeCreateSlidesetThumbnails = function(fc) {
@@ -22937,7 +22933,7 @@ VISH.Editor.IMSQTI = function(V, $, undefined) {
   var init = function() {
   };
   var isCompliantXMLFile = function(fileXML) {
-    var contains;
+    var isCompliant;
     var schema;
     var xmlDoc = $.parseXML(fileXML);
     var xml = $(xmlDoc);
@@ -22962,30 +22958,30 @@ VISH.Editor.IMSQTI = function(V, $, undefined) {
     }
     if(checkQuizType(fileXML) == "multipleCA") {
       if(itemBody.length == 0 || simpleChoice.length == 0 || correctResponse.length == 0 || schema == false) {
-        contains = false
+        isCompliant = false
       }else {
-        contains = true
+        isCompliant = true
       }
     }else {
       if(checkQuizType(fileXML) == "order") {
         if(itemBody.length == 0 || orderInteraction.length == 0 || correctResponse.length == 0 || schema == false) {
-          contains = false
+          isCompliant = false
         }else {
-          contains = true
+          isCompliant = true
         }
       }else {
         if(checkQuizType(fileXML) == "openshortAnswer" || checkQuizType(fileXML) == "fillInTheBlankText") {
           if(itemBody.length == 0 || correctResponse.length == 0 || schema == false) {
-            contains = false
+            isCompliant = false
           }else {
-            contains = true
+            isCompliant = true
           }
         }else {
-          contains = false
+          isCompliant = false
         }
       }
     }
-    return contains
+    return isCompliant
   };
   var checkAnswer = function(answer, correctArray) {
     var answerBoolean;
@@ -25730,8 +25726,9 @@ VISH.Editor.Quiz.TF = function(V, $, undefined) {
   return{init:init, add:add, save:save, draw:draw, isSelfAssessment:isSelfAssessment}
 }(VISH, jQuery);
 VISH.Editor.Renderer = function(V, $, undefined) {
-  var slides = null;
+  var _isRendering;
   var init = function(presentation) {
+    _isRendering = false;
     V.Editor.Animations.setCurrentAnimation(presentation.animation);
     if(presentation.type === V.Constant.PRESENTATION) {
       renderPresentation(presentation)
@@ -25743,7 +25740,8 @@ VISH.Editor.Renderer = function(V, $, undefined) {
     }
   };
   var renderPresentation = function(presentation) {
-    slides = presentation.slides;
+    _isRendering = true;
+    var slides = presentation.slides;
     for(var i = 0;i < slides.length;i++) {
       var slideNumber = V.Slides.getSlidesQuantity() + 1;
       var type = slides[i].type;
@@ -25756,6 +25754,7 @@ VISH.Editor.Renderer = function(V, $, undefined) {
         }
       }
     }
+    _isRendering = false
   };
   var _renderSlide = function(slide, renderOptions) {
     var options = {};
@@ -25852,7 +25851,10 @@ VISH.Editor.Renderer = function(V, $, undefined) {
       slidesetCreator.draw(slidesetJSON, scaffoldDOM)
     }
   };
-  return{init:init, renderPresentation:renderPresentation}
+  var isRendering = function() {
+    return _isRendering
+  };
+  return{init:init, renderPresentation:renderPresentation, isRendering:isRendering}
 }(VISH, jQuery);
 VISH.Editor.Scrollbar = function(V, $, undefined) {
   var createScrollbar = function(containerId, options) {
@@ -29134,14 +29136,22 @@ VISH.Quiz.API = function(V, $, undefined) {
       }})
     }else {
       if(V.Configuration.getConfiguration()["mode"] == V.Constant.NOSERVER) {
+        var mc_data = [{"answer":'[{"choiceId":"1","answer":"true"}]', "created_at":"2013-11-28T13:24:14Z", "id":62, "quiz_session_id":50}, {"answer":'[{"choiceId":"1","answer":"true"}]', "created_at":"2013-11-28T13:24:22Z", "id":63, "quiz_session_id":50}, {"answer":'[{"choiceId":"3","answer":"true"}]', "created_at":"2013-11-28T13:25:13Z", "id":64, "quiz_session_id":50}];
+        var mc_one_data = [{"answer":'[{"choiceId":"3","answer":"true"}]', "created_at":"2013-11-26T12:49:34Z", "id":47, "quiz_session_id":31}];
+        var mcm_data = [{"answer":'[{"choiceId":"1","answer":"true"},{"choiceId":"2","answer":"true"},{"choiceId":"3","answer":"true"}]', "created_at":"2013-11-22T17:51:20Z", "id":37, "quiz_session_id":27}, {"answer":'[{"choiceId":"1","answer":"true"},{"choiceId":"2","answer":"true"},{"choiceId":"3","answer":"true"}]', "created_at":"2013-11-22T17:51:29Z", "id":38, "quiz_session_id":27}, {"answer":'[{"choiceId":"1","answer":"true"},{"choiceId":"2","answer":"true"}]', "created_at":"2013-11-22T17:51:35Z", 
+        "id":39, "quiz_session_id":27}];
+        var tf_data = [{"answer":'[{"choiceId":"1","answer":"true"},{"choiceId":"2","answer":"false"},{"choiceId":"3","answer":"true"},{"choiceId":"4","answer":"true"}]', "created_at":"2013-05-13T13:10:23Z", "id":30, "quiz_session_id":19}, {"answer":'[{"choiceId":"1","answer":"true"},{"choiceId":"2","answer":"false"},{"choiceId":"3","answer":"false"},{"choiceId":"4","answer":"true"}]', "created_at":"2013-05-13T13:10:37Z", "id":31, "quiz_session_id":19}, {"answer":'[{"choiceId":"1","answer":"true"},{"choiceId":"2","answer":"true"},{"choiceId":"3","answer":"false"},{"choiceId":"4","answer":"false"}]', 
+        "created_at":"2013-05-13T13:10:52Z", "id":32, "quiz_session_id":19}, {"answer":'[{"choiceId":"1","answer":"true"},{"choiceId":"2","answer":"false"},{"choiceId":"3","answer":"true"},{"choiceId":"4","answer":"true"}]', "created_at":"2013-05-13T13:11:09Z", "id":33, "quiz_session_id":19}, {"answer":'[{"choiceId":"1","answer":"true"},{"choiceId":"2","answer":"false"},{"choiceId":"3","answer":"true"},{"choiceId":"4","answer":"true"}]', "created_at":"2013-05-13T13:11:41Z", "id":34, "quiz_session_id":19}];
+        var s_data = [{"answer":'[{"choiceId":"2","answer":2},{"choiceId":"1","answer":1},{"choiceId":"3","answer":3},{"selfAssessment":{"result":true}}]', "created_at":"2013-11-26T12:49:34Z", "id":47, "quiz_session_id":31}, {"answer":'[{"choiceId":"2","answer":1},{"choiceId":"1","answer":2},{"choiceId":"3","answer":3},{"selfAssessment":{"result":false}}]', "created_at":"2013-11-26T12:49:34Z", "id":48, "quiz_session_id":31}];
+        var o_data = [{"answer":'[{"answer":"Lorem ipsum dolor si amet one."}]', "created_at":"2013-11-28T13:24:14Z", "id":62, "quiz_session_id":50}, {"answer":'[{"answer":"Proin in blandit odio. Mauris placerat sollicitudin urna, at malesuada odio rhoncus eget."}]', "created_at":"2013-11-28T13:24:14Z", "id":63, "quiz_session_id":50}, {"answer":'[{"answer":"Aenean imperdiet tortor arcu, at congue sapien aliquam a."}]', "created_at":"2013-11-28T13:24:14Z", "id":64, "quiz_session_id":50}];
         var data;
         if(getResultsCount < 1) {
           data = []
         }else {
           if(getResultsCount < 3) {
-            data = [{"answer":'[{"answer":"Lorem ipsum dolor si amet one."}]', "created_at":"2013-11-28T13:24:14Z", "id":62, "quiz_session_id":50}]
+            data = mc_data
           }else {
-            data = [{"answer":'[{"answer":"Lorem ipsum dolor si amet one."}]', "created_at":"2013-11-28T13:24:14Z", "id":62, "quiz_session_id":50}, {"answer":'[{"answer":"Proin in blandit odio. Mauris placerat sollicitudin urna, at malesuada odio rhoncus eget."}]', "created_at":"2013-11-28T13:24:14Z", "id":63, "quiz_session_id":50}, {"answer":'[{"answer":"Aenean imperdiet tortor arcu, at congue sapien aliquam a."}]', "created_at":"2013-11-28T13:24:14Z", "id":64, "quiz_session_id":50}]
+            data = mc_data
           }
         }
         getResultsCount++;
@@ -29469,7 +29479,7 @@ VISH.Quiz.Sorting = function(V, $, undefined) {
     })
   };
   var _applySortable = function(tableTbody) {
-    $(tableTbody).sortable({cursor:"move", start:function(event, ui) {
+    $(tableTbody).sortable({cursor:"move", scroll:false, start:function(event, ui) {
     }, stop:function(event, ui) {
       var trOption = ui.item;
       _refreshChoicesIndex(trOption)
