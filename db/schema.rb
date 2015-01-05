@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20141120095200) do
+ActiveRecord::Schema.define(:version => 20150105072126) do
 
   create_table "activities", :force => true do |t|
     t.integer  "activity_verb_id"
@@ -56,6 +56,9 @@ ActiveRecord::Schema.define(:version => 20141120095200) do
     t.datetime "created_at",         :null => false
     t.datetime "updated_at",         :null => false
   end
+
+  add_index "activity_object_audiences", ["activity_object_id"], :name => "activity_object_audiences_on_activity_object_id"
+  add_index "activity_object_audiences", ["relation_id"], :name => "activity_object_audiences_on_relation_id"
 
   create_table "activity_object_properties", :force => true do |t|
     t.integer "activity_object_id"
@@ -142,6 +145,14 @@ ActiveRecord::Schema.define(:version => 20141120095200) do
   add_index "actors", ["activity_object_id"], :name => "index_actors_on_activity_object_id"
   add_index "actors", ["email"], :name => "index_actors_on_email"
   add_index "actors", ["slug"], :name => "index_actors_on_slug", :unique => true
+
+  create_table "announcements", :force => true do |t|
+    t.text     "message"
+    t.datetime "starts_at"
+    t.datetime "ends_at"
+    t.datetime "created_at", :null => false
+    t.datetime "updated_at", :null => false
+  end
 
   create_table "audiences", :force => true do |t|
     t.integer "relation_id"
@@ -245,6 +256,7 @@ ActiveRecord::Schema.define(:version => 20141120095200) do
     t.text     "embed"
   end
 
+  add_index "events", ["activity_object_id"], :name => "events_on_activity_object_id"
   add_index "events", ["room_id"], :name => "index_events_on_room_id"
 
   create_table "exclude_auth_mves", :force => true do |t|
@@ -274,7 +286,7 @@ ActiveRecord::Schema.define(:version => 20141120095200) do
     t.integer  "slide_count",        :default => 1
     t.text     "thumbnail_url"
     t.boolean  "draft",              :default => false
-    t.text     "offline_manifest",   :default => ""
+    t.text     "offline_manifest"
     t.datetime "scorm_timestamp"
     t.datetime "pdf_timestamp"
     t.integer  "mve",                :default => 0
@@ -322,6 +334,16 @@ ActiveRecord::Schema.define(:version => 20141120095200) do
   end
 
   add_index "notifications", ["conversation_id"], :name => "index_notifications_on_conversation_id"
+
+  create_table "pages", :force => true do |t|
+    t.string   "name"
+    t.string   "permalink"
+    t.text     "content"
+    t.datetime "created_at", :null => false
+    t.datetime "updated_at", :null => false
+  end
+
+  add_index "pages", ["permalink"], :name => "index_pages_on_permalink"
 
   create_table "pdfexes", :force => true do |t|
     t.datetime "created_at",                             :null => false

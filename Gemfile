@@ -4,7 +4,7 @@ gem 'rails', '= 3.2.14'
 
 #Database Adapters
 # gem 'sqlite3', '= 1.3.9'
-gem 'pg', '= 0.17.1'
+# gem 'pg', '= 0.17.1'
 # gem 'mysql2', '= 0.3.16'
 gem 'mysql2'
 
@@ -88,6 +88,8 @@ group :development do
   gem 'unicorn', '= 4.8.3'
   gem 'capistrano', '= 2.14.2'
   gem 'forgery', '= 0.6.0'
+  gem 'launchy'
+  gem 'poltergeist'
 end
 
 group :test do

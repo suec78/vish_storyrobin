@@ -1,0 +1,9 @@
+<p id="notice"><%= notice %></p>
+<div>
+<h2><%= @page.name %></h2>
+
+<%=  simple_format(@page.content) %>
+
+<br><br>
+<%= link_to 'Back', pages_path %>
+</div>

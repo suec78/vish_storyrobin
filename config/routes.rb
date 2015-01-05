@@ -1,5 +1,12 @@
 Vish::Application.routes.draw do
 
+  match 'announcements/:id/hide', to: 'announcements#hide', as: 'hide_announcement'
+
+  resources :pages
+  get "/static/:permalink" => redirect("/pages/%{permalink}")
+
+
+
   if Vish::Application.config.APP_CONFIG["register_policy"] == "INVITATION_ONLY"
     devise_for :users, :controllers => {:omniauth_callbacks => 'omniauth_callbacks', registrations: 'registrations', :invitations => 'devise_invitations' }, :skip => [:registrations] 
       as :user do
