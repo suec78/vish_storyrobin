@@ -387,7 +387,7 @@ ActiveRecord::Schema.define(:version => 20150105072126) do
     t.string   "province",     :limit => 45
     t.string   "country",      :limit => 45
     t.integer  "prefix_key"
-    t.string   "description"
+    t.text     "description"
     t.string   "experience"
     t.string   "website"
     t.string   "skype",        :limit => 45
