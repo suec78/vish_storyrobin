@@ -9,7 +9,7 @@ class TrackingSystemEntry < ActiveRecord::Base
   validates :data,
   :presence => true
 
-  def self.trackUIRecommendations(options)
+  def self.trackUIRecommendations(options,request,current_subject)
   end
 
   def self.trackRLOsInExcursions(rec,excursion,request,current_subject)
