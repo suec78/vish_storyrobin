@@ -17,10 +17,11 @@
       <!--Title-->
       <label><%= t('categories.leyend.title')%></label>
       <%= f.text_field :title, :id => div_id+"_category_title", :placeholder => t('categories.title_input') %>
-
+      
       <!--Description-->
       <label><%= t('categories.leyend.description')%></label>
       <%= f.text_field :description, :id => div_id+"_category_description", :placeholder => t('categories.description_input') %>
+
 
       <label><%= f.label :parentCategory, "Belongs to" %></label>
       <%= f.select(:parent_id, options_for_select(Category.category_parents_options_for_select(current_subject))) %>
@@ -28,7 +29,7 @@
       <!--Avatar-->
       <label><%= f.label :avatar, t('document.leyend.avatar') %></label>
       <%= f.file_field :avatar %>
-
+      
       <%= f.submit t('categories.save'), :class => "hidden" %>
     <% end %>
   </div>

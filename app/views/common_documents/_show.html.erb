@@ -3,7 +3,7 @@
 <section id="<%= document.class.to_s.underscore %> "class="layout_show">
 
   <%if @contribution%>
-    <%= render :partial => 'contributions/breadcrumb_path', :locals  => { :path => document.contribution.parents_path } %>
+    <%= render :partial => 'application/breadcrumb_path', :locals  => { :path => document.contribution.parents_path } %>
   <%end%>
 
   <% document_profile_subject ||= document.owner_subject %>
@@ -27,7 +27,11 @@
 
     <!--recomended-->
     <!-- No option[:models] mean all resources -->
-    <%= render :partial => 'recommender/sidebar', :locals  => { :resources => RecommenderSystem.resource_suggestions(current_subject,document,{:n=>16})} %>
+    <% rsEngine = TrackingSystemEntry.getRandomRSEngine
+       rec = TrackingSystemEntry.getRSCode(rsEngine)
+       resource_suggestions = RecommenderSystem.resource_suggestions(current_subject,@excursion,{:n=>16, :models => [Excursion], :recEngine => rsEngine, :track => true})
+    %>
+    <%= render :partial => 'recommender/sidebar', :locals  => { :resources => resource_suggestions, :rec => rec  } %>
 
     <div class="description-activity">
       <!-- Tool tab -->

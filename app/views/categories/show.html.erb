@@ -1,15 +1,19 @@
+<%= render :partial => 'application/breadcrumb_path', :locals  => { :path => @category.parents_path, :categorycrumb => true } %>
 <section id="category">
   <div class="category_info">
-      <!-- corner -->
-    <div class="corner-item">
-      <div class="corner-item2">
-        <div class="corner-color"></div>
-        <i class="icon-th-large"></i>
+    <div class="left_info">
+        <!-- corner -->
+      <div class="corner-item">
+        <div class="corner-item2">
+          <div class="corner-color"></div>
+          <i class="icon-th-large"></i>
+        </div>
+        <div class="corner-background"></div>
       </div>
-      <div class="corner-background"></div>
-    </div>
-    <div class="icon-box">
-       <%= render :partial => 'categories/thumbnail', :locals =>{:category => @category, :show_avatar => true} %>
+    
+      <div class="icon-box ">
+         <%= render :partial => 'categories/thumbnail', :locals =>{:category => @category, :show_avatar => true} %>
+      </div>
     </div>
     <div class="information">
       <!--help-->
@@ -18,7 +22,7 @@
       <h2><%= @category.title %></h2>
       <!--description-->
       <div class="description"><%= @category.description %></div>
-      <%= render :partial => 'application/breadcrumb_path', :locals  => { :path => @category.parents_path } %>
+      
       <!--author-->
       <div class="author"> <span class="by"><%=t('by')%></span> <%= link_to @category.author.name, @category.author.subject %></div>
     </div>
@@ -41,10 +45,13 @@
           <%= f.text_field :title %>
           <label><%= t('categories.leyend.description')%></label>
           <%= f.text_field :description %>
-          <label><%= f.label :parentCategory, "Belongs to" %></label>
+          <label><%= f.label :parentCategory, t('categories.actions.belongs_to') %></label>
           <%= f.select(:parent_id, options_for_select(Category.category_parents_options_for_select(current_subject,@category), @category.parent.nil? ? nil : @category.parent.id)) %>
+          <%= f.label :scope, t('document.leyend.scope') %>
+          <%= f.select(:scope, options_for_select([[t('scope.public'), 0], [t('scope.private'), 1]],@category.scope)) %>
           <label><%= f.label :avatar, t('document.leyend.avatar') %></label>
           <%= f.file_field :avatar %>
+            <!--Fix styles-->
           <div class="actions">
             <%= f.submit t('categories.save'), :id => "saveCategory" %>
             <%=link_to t('hide'), "#", :id=>"hide_category_form", :class=>"btn "%>
@@ -54,6 +61,8 @@
     <%end%>
   </div>
 </section>
+
+
 
 <%  @items = @category.property_objects
     order = @category.categories_order
