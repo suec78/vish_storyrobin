@@ -9,14 +9,85 @@ class TrackingSystemEntry < ActiveRecord::Base
   validates :data,
   :presence => true
 
+  validate :valid_user_agent
+  def valid_user_agent
+    if TrackingSystemEntry.isUserAgentBot?(self.user_agent)
+      errors[:base] << "Invalid user agent"
+    else
+      true
+    end
+  end
+
+  def self.isUserAgentBot?(user_agent)
+    matches = nil
+    unless user_agent.blank?
+      matches = user_agent.match(/(eSobiSubscriber|startmebot|Mail.RU_Bot|SeznamBot|360Spider|bingbot|MJ12bot|web spider|YandexBot|Baiduspider|AhrefsBot|OrangeBot|msnbot|spbot|facebook|postrank|voyager|twitterbot|googlebot|slurp|butterfly|pycurl|tweetmemebot|metauri|evrinid|reddit|digg)/mi)
+    end
+    return (user_agent.blank? or !matches.nil?)
+  end
+
+  def self.isBot?(request)
+    user_agent = request.env["HTTP_USER_AGENT"]
+    return isUserAgentBot?(user_agent)
+  end
+
   def self.trackUIRecommendations(options,request,current_subject)
+    return #disable on StoryRobin
+    return if isBot?(request)
+    return if options.blank? or !options[:recEngine].is_a? String
+    
+    tsentry = TrackingSystemEntry.new
+    tsentry.app_id = "ViSHUIRecommenderSystem"
+    tsentry.user_agent = request.user_agent
+    tsentry.referrer = request.referrer
+    tsentry.user_logged = (current_subject.nil? ? false : true)
+
+    data = {}
+    data["rsEngine"] = options[:recEngine]
+    data["models"] = options[:model_names]
+    data["quantity"] = options[:n]
+
+    tsentry.data = data.to_json
+    tsentry.save
   end
 
   def self.trackRLOsInExcursions(rec,excursion,request,current_subject)
+    return #disable on StoryRobin
+    return if request.format == "full"
+    return if isBot?(request)
+
+    if rec.is_a? String
+      rsEngine = getRSName(rec)
+      return if rsEngine.nil?
+      rec = true
+    else
+      rec = false
+      rsEngine = "none"
+    end
+
+    tsentry = TrackingSystemEntry.new
+    tsentry.app_id = "ViSH RLOsInExcursions"
+    tsentry.user_agent = request.user_agent
+    tsentry.referrer = request.referrer
+    tsentry.user_logged = (current_subject.nil? ? false : true)
+
+    data = {}
+    data["rec"] = rec
+    data["rsEngine"] = rsEngine
+    data["excursionId"] = excursion.id
+    data["qscore"] = excursion.qscore
+    data["popularity"] = excursion.popularity
+    tsentry.data = data.to_json
+
+    if tsentry.save
+      tsentry
+    else
+      nil
+    end
   end
 
   def self.getRandomRSEngine
-    return "ViSHRecommenderSystem"
+    return (rand < 0.5 ? "ViSHRecommenderSystem" : "ViSHRS-Quality")
   end
 
   def self.getRSCode(str)
