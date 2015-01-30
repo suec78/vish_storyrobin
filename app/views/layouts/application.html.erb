@@ -20,37 +20,12 @@
 
   <%= favicon_link_tag "icons/favicon.ico" %>
   <%= stylesheet_link_tag "application" %>
-  <%= javascript_include_tag "application" %>
-  <script type="text/javascript">
-    var CKEDITOR_BASEPATH = '/assets/ckeditor/';
-  </script>
-  <%= javascript_include_tag "ckeditor/ckeditor" %>
-
+  
   <% if protect_against_forgery? %>
   <%= csrf_meta_tag %>
   <% end %>
-
-  <script type="text/javascript">
-    I18n.defaultLocale = "<%= I18n.default_locale %>";
-    I18n.locale = "<%= I18n.locale %>";
-  </script>
-
-  <script type="text/javascript">
-    $(document).ready(function() {  
-      //setTimeout(function(){ $("#flash .alert").hide("slow") }, 5000);
-      //code to hide the help popovers when clicking outside
-      $('body').on('click', function (e) {
-              if ($(".popover").is(":visible") && !$(e.target).parents(".helpbutton").size()>0) {
-                  $(".helppopover").popover('hide');
-              }
-      });
-
-      <%= yield :javascript%>
-    });
-  </script>
+  
   <%= yield :headers %>
-  <%= render :partial => 'layouts/google_analytics' %>
-  <%= render :partial => 'layouts/uservoice' %>
 
 </head>
 <body>
@@ -67,21 +42,39 @@
 
     <%= render :partial => "layouts/header" %>
     <div class="wrapper">      
-
-	<% Announcement.current(cookies.signed[:hidden_announcement_ids]).each do |announcement| %>
-	  <%= div_for announcement do %>
-	    <%= announcement.message %>
-	    <%= link_to "hide announcement", hide_announcement_path(announcement), remote: true %>
-	  <% end %>
-	<% end %>
-
       <%= flashy %>
       <%= yield %>
     </div>  
     <div class="push">  </div>   
   </div>
   <%= render :partial => "layouts/footer" %>
-  <%= render :partial => "layouts/crazyegg" %>
 
 </body>
+
+<%= javascript_include_tag "application" %>
+  <script type="text/javascript">
+    var CKEDITOR_BASEPATH = '/assets/ckeditor/';
+  </script>
+  <%= javascript_include_tag "ckeditor/ckeditor" %>
+  <script type="text/javascript">
+    I18n.defaultLocale = "<%= I18n.default_locale %>";
+    I18n.locale = "<%= I18n.locale %>";
+  </script>
+
+  <script type="text/javascript">
+    $(document).ready(function() {  
+      
+      //setTimeout(function(){ $("#flash .alert").hide("slow") }, 5000);
+      //code to hide the help popovers when clicking outside
+      $('body').on('click', function (e) {
+              if ($(".popover").is(":visible") && !$(e.target).parents(".helpbutton").size()>0) {
+                  $(".helppopover").popover('hide');
+              }
+      });
+
+      <%= yield :javascript%>
+    });
+  </script>
+  <%= render :partial => 'layouts/google_analytics' %>
+  <%= render :partial => 'layouts/uservoice' %>
 </html>
