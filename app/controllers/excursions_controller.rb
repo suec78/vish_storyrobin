@@ -61,7 +61,7 @@ class ExcursionsController < ApplicationController
         send_file "#{Rails.root}/public/scorm/excursions/#{@excursion.id}.zip", :type => 'application/zip', :disposition => 'attachment', :filename => "scorm-#{@excursion.id}.zip"
       }
       format.pdf {
-        @excursion.to_pdf(self)
+        @excursion.to_pdf
         if File.exist?("#{Rails.root}/public/pdf/excursions/#{@excursion.id}/#{@excursion.id}.pdf")
           send_file "#{Rails.root}/public/pdf/excursions/#{@excursion.id}/#{@excursion.id}.pdf", :type => 'application/pdf', :disposition => 'attachment', :filename => "#{@excursion.id}.pdf"
         else
@@ -73,7 +73,7 @@ class ExcursionsController < ApplicationController
 
   def new
     new! do |format|
-      format.full { render :layout => 'veditor' }
+      format.full { render :layout => 'veditor', :locals => {:default_tag=> params[:default_tag]}}
     end
   end
 
