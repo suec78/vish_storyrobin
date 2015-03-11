@@ -266,6 +266,7 @@ en:
   contribution:
     content: "Content"
     title: "Title"
+    action: "Contribute"
   pending:
     other: "Following you"
   contest:
@@ -908,6 +909,9 @@ en:
       msg: "StoryRobin - Messages"
       activity: "StoryRobin - Activities"
     name: "StoryRobin"
+  StoryRobin:
+    about: "About StoryRobin"
+    starterguide: "Starter Guide"
   swf:
     confirm_delete: "Delete SWF?"
     name: "flash object"
@@ -923,9 +927,11 @@ en:
     one: "user"
     other: "users"
   username: "username"
-  StoryRobin:
-    about: "About StoryRobin"
-    starterguide: "Starter Guide"
+  validation:
+    invalid_resource: "Resource not valid"
+    invalid_contributions_gallery: "A contributions gallery should include at least one assignment"
+    invalid_available_contributions: "Invalid available contributions"
+    invalid_resources_gallery: "This resources gallery include invalid entities"
   views:
     pagination:
       next: "»"
@@ -945,23 +951,26 @@ en:
         cancel_&_go: "Cancel and go to Workshop"
         collapse_all: "Collapse all"
         confirm_delete: "Delete workshop?"
-        delete: "Delete workshop"
+        delete: "Delete"
         edit_activity_button: "Save"
         edit_mode_btOn: "Turn on editing mode"
         edit_mode_btOff: "Turn off editing mode"
         expand_all: "Expand all"
         publish: "Publish"
+        show_contributions: "Contributions"
         unpublish: "Unpublish"
     activities:
         actions:
-            add_new_activity: "Add new activity"
+            add_new_activity: "Add activity"
             confirm_delete: "Delete activity?"
         assignment:
-            add_image: "Upload"
-            add_writing: "Writing"
+            add_document: "Upload"
+            add_resource: "Add resource"
+            add_resource_message: "Here you can send to the assignment any of your ViSH resources. To do that, write the URL of your resource and click on the button."
             available_contributions:
-                document: "Picture"
                 title: "Available contributions"
+                document: "Picture"
+                resource: "Resource"
                 writing: "Writing"
             content: "Content"
             contribution_message: "Submit:"
@@ -987,9 +996,9 @@ en:
             title: "Further Explanation"
             description: "Include a paragraph of text for further explanation."
             text: "In addition to the description of the workshop and the tasks defined in it, sometimes you will need the ability to insert a block of text with other purpose, such as a bibliography or other data of interest for the workshop. With this component you can add a completely personalized and editable text to your workshop."
-
     new: "New Workshop"
     other: "Workshops"
+    title: "Workshop"
     titles:
         editing_details: "Editing workshop details"
         editing_main: "Editing Workshop"

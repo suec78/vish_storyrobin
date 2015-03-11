@@ -1,9 +1,10 @@
 class WorkshopsController < ApplicationController
 
-  before_filter :authenticate_user!, :only => [ :new, :create, :edit, :update]
+  before_filter :authenticate_user!, :only => [ :new, :create, :edit, :update, :contributions]
   before_filter :fill_create_params, :only => [:new, :create]
-  before_filter :fill_draft, :only => [:new, :create, :edit, :update]
-  skip_load_and_authorize_resource :only => [ :edit_details]
+  before_filter :fill_draft, :only => [:create, :update]
+  skip_load_and_authorize_resource :only => [ :edit_details, :contributions ]
+  skip_after_filter :discard_flash, :only => [:edit]
 
   include SocialStream::Controllers::Objects
 
@@ -96,6 +97,21 @@ class WorkshopsController < ApplicationController
     end
   end
 
+  def contributions
+    @workshop = Workshop.find(params[:id])
+
+    unless verify_owner(@workshop)
+      return render :text => "You are not the owner of this workshop"
+    end
+
+    respond_to do |format|
+      format.html {
+        @contributions = @workshop.contributions
+        render
+      }
+    end
+  end
+
   def destroy
     destroy! do |format|
       format.all { redirect_to user_path(current_subject) }
@@ -121,14 +137,26 @@ class WorkshopsController < ApplicationController
 
   def fill_draft
     params["workshop"] ||= {}
+    
+    workshop = resource rescue nil
+    if workshop.nil?
+      #Creating new workshop
+      if params["workshop"]["draft"].blank?
+        params["workshop"]["draft"]="true"
+      end
+    end
 
-    unless params["workshop"]["draft"]==="false"
+    if params["workshop"]["draft"]==="true"
       params["workshop"]["scope"] = "1" #private
       params["workshop"]["draft"] = true
-    else
+    elsif params["workshop"]["draft"]==="false"
       params["workshop"]["scope"] = "0" #public
       params["workshop"]["draft"] = false
     end
+  end
+
+  def verify_owner(workshop)
+    return (can? :update, workshop)
   end
 
 end
