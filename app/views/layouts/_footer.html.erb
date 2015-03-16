@@ -14,7 +14,7 @@
 
       <li class="dropup">
         <div data-toggle="dropdown" class="btn dropdown-toggle">
-          <span class="idioma"><%= t('help') %></span>
+          <span class="ddfootertitle"><%= t('help') %></span>
           <i class="icon-angle-up"></i>
         </div>  
 
@@ -62,7 +62,7 @@
 
         <div data-toggle="dropdown" class="btn dropdown-toggle">
           <% the_locale = I18n.locale.to_s %>
-          <span class="idioma"><%=image_tag("flags/" + the_locale + ".png", :title=>the_locale, :class=> "")%><%= t('lang.title') %></span>
+          <span class="ddfootertitle"><%=image_tag("flags/" + the_locale + ".png", :title=>the_locale, :class=> "")%><%= t('lang.title') %></span>
           <i class="icon-angle-up"></i>
         </div>  
           <ul class="dropdown-menu">
