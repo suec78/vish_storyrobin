@@ -5,6 +5,7 @@
   resourcesRecent = ActivityObject.getRecent(10,{:subject => current_subject, :ids_to_avoid => ids_to_avoid, :models => homeModels})
   ids_to_avoid += resourcesRecent.map{|r| r.activity_object.id}
   resourcesPopular = Search.search({:n => 16, :order => "ranking DESC", :ao_ids_to_avoid => ids_to_avoid, :page => 1, :models=> homeModels})
+  ids_to_avoid += resourcesPopular.map{|r| r.activity_object.id}
 %>
 
 <section id="excursions_tab_ready3" class="entities recent_entities">
