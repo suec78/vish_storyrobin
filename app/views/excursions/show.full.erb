@@ -4,8 +4,6 @@
 	options = {};
 	var configuration = {};
 
-	configuration["mode"] = "vish";
-
 	configuration["ImagesPath"] = "/assets/";
 	configuration["StylesheetsPath"] = "/assets/";
 
@@ -19,8 +17,13 @@
 		rootURL: '<%=QuizSession.root_url%>'
 	};
 
+	//WAPP TOKEN API
+	configuration["WAPP_TOKEN_API"] = {
+		rootURL: "<%=Vish::Application.config.full_domain%>" + "/apis/wapp_token"
+	};
+
 	//Tracking System
-	<%unless Vish::Application.config.APP_CONFIG['trackingSystemAPIKEY'].nil? or Vish::Application.config.APP_CONFIG['trackingSystemAPIURL'].nil? %>
+	<%if Vish::Application.config.trackingSystem %>
 		configuration["TrackingSystemAPIKEY"] = "<%= Vish::Application.config.APP_CONFIG['trackingSystemAPIKEY'] %>";
 		configuration["TrackingSystemAPIURL"] = "<%= Vish::Application.config.APP_CONFIG['trackingSystemAPIURL'] %>";
 		<% unless params["trseid"].blank? %>
@@ -29,20 +32,30 @@
 	<%end%>
 
 	//LOEP configuration
-	<%unless Vish::Application.config.APP_CONFIG['loep'].nil? or @excursion.nil? or @excursion.activity_object.nil?%>
-		<%loepConfig = Vish::Application.config.APP_CONFIG['loep']%>
-		<%tokenURL = (Vish::Application.config.full_domain + '/loep/session_token.json') %>
+	<% unless Vish::Application.config.APP_CONFIG['loep'].nil? or @excursion.nil? or @excursion.activity_object.nil? %>
+		<% loepConfig = Vish::Application.config.APP_CONFIG['loep'] %>
+		<% tokenURL = Embed.checkUrlProtocol(Vish::Application.config.full_domain + '/loep/session_token.json', request.protocol) %>
 		configuration["loepSettings"] = {
 			tokenURL: '<%=tokenURL%>',
-			domain: '<%=loepConfig["domain"]%>',
+			domain: '<%=Embed.checkUrlProtocol(loepConfig["domain"], request.protocol)%>',
 			app: '<%=loepConfig["app_name"]%>',
 			loId: '<%=@excursion.activity_object.getGlobalId()%>',
-			evmethod: "wbltses"
+			evmethod: "wblts"
 		};
+		<% unless loepConfig["repository_name"].blank? %>
+			configuration["loepSettings"]["repository"] = '<%=loepConfig["repository_name"]%>';
+		<% end %>
+		<% if user_signed_in? %>
+			configuration["loepSettings"]["user_id"] = '<%=current_user.id%>';
+		<% end %>
 	<%end%>
 
 	options["configuration"] = configuration;
 	options["developping"] = false;
+
+	options["environment"] = {
+		name: "<%= Vish::Application.config.name %>"
+	}
 
 	//User data
 	<% if user_signed_in? %>
@@ -50,7 +63,7 @@
 			name: "<%= current_subject.name %>",
 			id: "<%= Actor.normalize_id(current_subject) %>",
 			token: "<%= form_authenticity_token %>"
-		}
+		};
 	<% end %>
 
 	options["lang"] = "<%= I18n.locale.to_s%>";
@@ -66,7 +79,7 @@
 			enterFullscreenURL: "<%=excursion_path(@excursion, :format => :full)%>"
 		};
 		<% if @orgUrl %>
-			options["fullScreenFallback"].exitFullscreenURL = "<%=@orgUrl%>"
+			options["fullScreenFallback"].exitFullscreenURL = "<%=@orgUrl%>";
 		<% end %>
 	<% end %>
 

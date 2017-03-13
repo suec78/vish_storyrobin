@@ -33,11 +33,11 @@ namespace :fix do
             end
           end
         end
-      if jsonChange
-        puts "Excursion ID"
-        puts excursion.id
-        #excursion.update_column :json, eJson.to_json
-      end
+        if jsonChange
+          puts "Excursion ID"
+          puts excursion.id
+          #excursion.update_column :json, eJson.to_json
+        end
       rescue Exception => e
         puts "Exception with excursion id:"
         puts excursion.id.to_s
@@ -55,14 +55,14 @@ namespace :fix do
 
 
   #Usage
-  #Development:   bundle exec rake fix:resetScormTimestamp
-  #In production: bundle exec rake fix:resetScormTimestamp RAILS_ENV=production
-  task :resetScormTimestamp => :environment do
-
-    printTitle("Reset scorm timestamp")
+  #Development:   bundle exec rake fix:resetScormTimestamps
+  #In production: bundle exec rake fix:resetScormTimestamps RAILS_ENV=production
+  task :resetScormTimestamps => :environment do
+    printTitle("Reset SCORM timestamps")
 
     Excursion.all.map { |ex| 
-      ex.update_column :scorm_timestamp, nil
+      ex.update_column :scorm2004_timestamp, nil
+      ex.update_column :scorm12_timestamp, nil
     }
 
     printTitle("Task Finished")
@@ -567,6 +567,253 @@ namespace :fix do
 
     printTitle("Task Finished")
   end
+
+  #Usage
+  #Development:   bundle exec rake fix:updateTagArrayText
+  #In production: bundle exec rake fix:updateTagArrayText RAILS_ENV=production
+  task :updateTagArrayText => :environment do
+    printTitle("Updating the tag_array_text field of the activity objects")
+    ActivityObject.all.each do |ao|
+      ao.update_column :tag_array_text, ao.save_tag_array_text if ao.tag_list.is_a? ActsAsTaggableOn::TagList
+    end
+    printTitle("Task Finished")
+  end
+
+  #Usage
+  #Development:   bundle exec rake fix:roles
+  #In production: bundle exec rake fix:roles RAILS_ENV=production
+  task :roles => :environment do
+
+    printTitle("Fixing roles")
+
+    Rake::Task["db:populate:create:roles"].invoke
+
+    Actor.record_timestamps=false
+    Actor.all.select{|a| a.roles.empty?}.each do |a|
+      a.roles.push(Role.default)
+    end
+    Actor.record_timestamps=true
+
+    printTitle("Task Finished")
+  end
+
+  #Usage
+  #Development:   bundle exec rake fix:licenses
+  #In production: bundle exec rake fix:licenses RAILS_ENV=production
+  task :licenses => :environment do
+
+    printTitle("Fixing licenses")
+
+    Rake::Task["db:populate:create:licenses"].invoke
+
+    defaultPublicLicenseId = License.default.id rescue nil
+    defaultPrivateLicenseId = License.find_by_key("private").id rescue nil
+
+    #Assign licenses to AOs
+    ActivityObject.all.each do |ao|
+      if ao.should_have_license?
+        if ao.license_id.nil?
+          if ao.private_scope?
+            ao.update_column :license_id, defaultPrivateLicenseId
+          else
+            ao.update_column :license_id, defaultPublicLicenseId
+          end
+        end
+
+        #License attribution
+        if !ao.license.nil? and ao.license.public? and ao.license.requires_attribution? and ao.license_attribution.nil? and ao.original_author.nil? and !ao.owner.nil?
+          ao.update_column :license_attribution, ao.default_license_attribution
+        end
+      end
+    end
+
+    #Get all excursions
+    Excursion.all.each do |excursion|
+        eJson = JSON(excursion.json)
+        jsonChanged = false
+
+        unless excursion.draft
+          unless eJson["vishMetadata"].is_a? Hash
+            eJson["vishMetadata"] = {}
+          end
+          #Mark published excursions as released
+          unless eJson["vishMetadata"]["released"]==="true"
+            eJson["vishMetadata"]["released"] = "true"
+            jsonChanged = true
+          end
+        else
+          #Private license for first drafts
+          unless eJson["vishMetadata"].is_a? Hash and eJson["vishMetadata"]["released"]==="true"
+            unless defaultPrivateLicenseId.nil?
+              excursion.activity_object.update_column :license_id, defaultPrivateLicenseId
+            end
+          end
+        end
+
+        unless eJson["license"].is_a? Hash and eJson["license"]["key"].is_a? String and eJson["license"]["key"]==excursion.license.key
+          eJson["license"] = {name: excursion.license.name, key: excursion.license.key}
+          jsonChanged = true
+        end
+
+        excursion.update_column :json, eJson.to_json if jsonChanged
+    end
+
+    printTitle("Task Finished")
+  end
+
+  #Usage
+  #Development:   bundle exec rake fix:categoriesScope
+  #In production: bundle exec rake fix:categoriesScope RAILS_ENV=production
+  task :categoriesScope => :environment do
+    printTitle("Fixing Categories: changing scope to hidden")
+
+    Category.record_timestamps = false
+    ActivityObject.record_timestamps = false
+
+    Category.all.each do |category|
+      category.scope = 1
+      category.valid?
+
+      unless category.errors.blank?
+        if category.errors.full_messages.include?("Title is too long.")
+          category.title = category.title[0..49]
+        end
+
+        if category.errors.full_messages.include?("There is another category with the same title")
+          category.title = category.title[0..44] if category.title.length > 45
+          category.title = category.title + "-" + category.id.to_s
+        end
+      end
+
+      category.save!
+    end
+
+    Category.record_timestamps = true
+    ActivityObject.record_timestamps = true
+  end
+
+  #Usage
+  #Development:   bundle exec rake fix:defaultNotificationSettings
+  #In production: bundle exec rake fix:defaultNotificationSettings RAILS_ENV=production
+  task :defaultNotificationSettings => :environment do
+    printTitle("Applying default notification settings to all users")
+
+    Actor.record_timestamps = false
+    User.record_timestamps = false
+    Profile.record_timestamps = false
+    ActivityObject.record_timestamps = false
+
+    User.registered.each do |user|
+      user.actor.notification_settings = user.notification_settings.merge(SocialStream.default_notification_settings)
+      user.actor.save!
+    end
+
+    Actor.record_timestamps = true
+    User.record_timestamps = true
+    Profile.record_timestamps = true
+    ActivityObject.record_timestamps = true
+  end
+
+  #Usage
+  #Development:   bundle exec rake fix:updateScormPackages
+  #In production: bundle exec rake fix:updateScormPackages RAILS_ENV=production
+  task :updateScormPackages => :environment do
+    printTitle("Updating SCORM Packages")
+    Scormfile.record_timestamps=false
+    ActivityObject.record_timestamps=false
+
+    Scormfile.all.each do |scormfile|
+      begin
+        scormfile.updateScormfile
+      rescue Exception => e
+        puts "Exception in Scormfile with id '" + scormfile.id.to_s + "'. Exception message: " + e.message
+      end
+    end
+
+    Rake::Task["fix:resetScormTimestamps"].invoke
+
+    Scormfile.record_timestamps=true
+    ActivityObject.record_timestamps=true
+    printTitle("Task finished")
+  end
+
+  #Usage
+  #Development:   bundle exec rake fix:originalAuthors
+  #In production: bundle exec rake fix:originalAuthors RAILS_ENV=production
+  task :originalAuthors => :environment do
+    printTitle("Checking original authors")
+
+    ActivityObject.getAllResources.each do |ao|
+      if !ao.original_author.nil? and ao.author and ao.author.name==ao.original_author
+        ao.update_column :original_author, nil
+      end
+    end
+
+    printTitle("Task finished")
+  end
+
+  #Usage
+  #Development:   bundle exec rake fix:createViSH2013Contest
+  task :createViSH2013Contest => :environment do
+    printTitle("Create the ViSHCompetition 2013 Contest")
+
+    c = Contest.new
+    c.name = "vish2013"
+    c.template = "vish2013"
+    c.show_in_ui = true
+    c.settings = ({"enroll" => "false", "submission" => "free", "submission_require_enroll" => "false"}).to_json
+    c.save!
+
+    allAos = ActivityObject.where("object_type in (?)", ["Excursion"]).with_tag("ViSHCompetition2013")
+
+    ["Maths","Physics","Chemistry","Biology","Geography","EnvironmentalStudies","Engineering","Humanities","NaturalScience","ComputerScience"].each do |cName|
+      cc = ContestCategory.new
+      cc.name = cName
+      cc.contest_id = c.id
+      cc.save!
+      cAos = allAos.select{|ao| ao.tags.map{|t| t.plain_name}.include? ActsAsTaggableOn::Tag.getPlainName(cName)}
+      cAos.each do |ao|
+        cc.addActivityObject(ao)
+      end
+    end
+    
+    printTitle("Task finished. ViSH Competition contest created.")
+  end
+
+
+  #Usage
+  #Development:   bundle exec rake fix:createTestContest
+  task :createTestContest => :environment do
+    printTitle("Create a test Contest")
+
+    c = Contest.find_by_template("test")
+    c.destroy unless c.nil?
+
+    ml = MailList.find_by_name("MailList Contest Test")
+    ml.destroy unless ml.nil?
+
+    #Create MailList
+    ml = MailList.new
+    ml.name = "MailList Contest Test"
+    ml.settings = ({"require_login" => "false", "require_name" => "false"}).to_json
+    ml.save!
+
+    c = Contest.new
+    c.name = "test"
+    c.template = "test"
+    c.show_in_ui = true
+    c.settings = ({"enroll" => "true", "submission" => "one_per_user", "submission_require_enroll" => "false"}).to_json
+    c.mail_list_id = ml.id
+    c.save!
+
+    cc = ContestCategory.new
+    cc.name = "General"
+    cc.contest_id = c.id
+    cc.save!
+
+    printTitle("Task finished. Test contest created with id " + c.id.to_s)
+  end
+
 
   ####################
   #Task Utils

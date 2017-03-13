@@ -1,5 +1,5 @@
 fr:
-  about: 
+  about:
     contact: "Contacter"
   activerecord:
     attributes:
@@ -8,6 +8,24 @@ fr:
         tag: "Centres d'intérêt"
   activity:
     empty: "Votre ligne du temps est vide"
+    items:
+      infoaction:
+        audio: "Audio ajouté"
+        category: "Catégorie ajouté"
+        document: "document ajouté"
+        embed: "Embed ajouté"
+        event: "Événement ajouté"
+        excursion: "Excursion ajouté"
+        file: "Fichier ajouté"
+        link: "Lien ajouté"
+        picture: "Image ajouté"
+        scormfile: "SCORM fichier ajouté"
+        swf: "SWF ajouté"
+        video: "Vidéo ajouté"
+        webapp: "Application Web ajouté"
+        workshop: "Workshop ajouté"
+        writing: "Texte ajouté"
+        zipfile: "ZIP fichier ajouté"
     more: "Plus..."
     new_user: "Bienvenue sur la plateforme ViSH ! Publiez et partagez vos points de vue, vos liens et vos vidéos avec vos abonnés."
     newmessage: "Ceci est votre ligne du temps. Vous pouvez publier et partager des photos, des vidéos, des liens et bien plus encore."
@@ -30,8 +48,9 @@ fr:
   cancel: "Annuler"
   close: "Fermer"
   conditions:
-    check_message: "En cliquant sur le bouton Accepter, vous vous engagez à respecter nos "
-    check_message_1: "conditions générales."
+    check_message: "J'accepte les "
+    check_message_1: "conditions générales"
+    check_message_2: " de ViSH."
     other: "conditions"
   contact:
     pending:
@@ -44,15 +63,6 @@ fr:
     document: "document"
     help:
       title: "Publication de ressources"
-      info1_html: "1. Cliquez sur l'onglet <b>documents</b>, <b>liens</b> ou <b>code incorporé</b>.<br>"
-      info2_html: "2. Si vous souhaitez publier un document, cliquez sur <b>parcourir</b> pour sélectionner un fichier sur votre ordinateur. Si votre ressource est un lien ou un code incorporé, vous pouvez la <b>coller</b> dans la zone de texte.<br>"
-      info3_html: "3. Saisissez un <b>titre</b> et une <b>description</b>.<br>"
-      info4_html: "4. Ajoutez des <b>mots-clés</b> à votre ressource. Vos centres d'intérêt ont été attribués par défaut. Vous pouvez toutefois les supprimer ou ajouter de nouveaux mots-clés.<br>"
-      info5_html: "5. Choisissez une <b>langue</b> requise, si nécessaire.<br>"
-      info6_html: "6. Sélectionnez une tranche d'<b>âge </b>. Ces informations seront utilisées à des fins de recommandation.<br>"
-      info7_html: "7. Si vous souhaitez intégrer un flux vidéo en direct, cliquez sur l'option <b>En direct</b>.<br>"
-      info8_html: "8. Pour finir, cliquez sur le bouton <b> enregistrer </b> pour publier votre ressource."
-    how: "Comment partager une ressource"
     info:
       title: "Titre"
       description: "Description"
@@ -83,6 +93,8 @@ fr:
       download: "télécharger"
       edit: "éditer"
       show: "afficher"
+      show_more: "Déployer"
+      show_fewer: "Réduire"
       share: "partager"
       scorm: "scorm"
     clone:
@@ -98,11 +110,6 @@ fr:
     detail: "Détail"
     favorites: "Favoris"
     how: "Comment créer une excursion"
-    invite:
-      email:
-        body: "Salut,%0A%0AJette%20un%20coup%20d'œil%20à%20cette%20excursion%20sur%20la%20plateforme%20ViSH%20:%0A%0A%{url}%0A%0Aj'%20espère%20qu'elle%20te%20plaîra%20!%0A%0A%{name}"
-        link: "adresse électronique"
-        subject: "Jette%20un%20coup%20d'œuil%20à%20cette%20excursion%20sur%20le%20site%20http://vishub.org%20:%20%{title}"
     is_draft: "[BROUILLON]"
     my: "mon"
     name: "excursion"
@@ -134,8 +141,6 @@ fr:
     followings: "abonnements"
     is_favorite: "Est favorite"
     views: "vues"
-  go:
-    repository: "accéder à la bibliothèque"
   help: "aide"
   info:
     author: "Auteur"
@@ -150,7 +155,6 @@ fr:
     one: "lien"
     other: "liens"
     confirm_delete: "Supprimer le lien ?"
-    go: "Accéder au lien"
   translate:
     change: "Modifier la langue"
   mailboxer:
@@ -283,10 +287,14 @@ fr:
   sign_up: "Inscription"
   site:
     current:
-      description: "A meeting point for scientists and teachers based around the idea of virtual excursions"
-      keywords: "VisHub,virtual,excursion"
-      title: "Virtual Science Hub"
-    name: "Plateforme des sciences virtuelles"
+      description: "ViSH is a social and collaborative site for creating and sharing knowledge resources for the realization of educational activities."
+      keywords: "e-Learning, Technology Enhanced Learning, education, Learning Objects, repository, resources, authoring tool, catalogue, search"
+      title: "ViSH"
+      search: "ViSH - Search"
+      browse: "ViSH - Explore"
+      msg: "ViSH - Messages"
+      activity: "ViSH - Activities"
+    name: "ViSH"
   swf:
     confirm_delete: "Supprimer SWF?"
   today: "Aujourd'hui"
@@ -336,54 +344,6 @@ fr:
     success: "Enregistrement des catégories réussi"
   pending:
     other: "Abonnés"
-  contest:
-    moreinfo: "En savoir plus"
-    faq: "Questions et réponses"
-    candidates: "Candidats"
-    intro: "Les individus et les institutions peuvent participer au concours. Le concours des meilleures excursions virtuelles est ouvert à tout utilisateur inscrit sur la plateforme ViSH. Seules les excursions virtuelles finalisées seront acceptées."
-    categories: "Catégories"
-    categories2: "Mathématiques, physique, chimie, biologie, géographie, étudesenvironnementales, ingénierie, sciences humaines, sciencesnaturelles et informatique"
-    languajes_intro: "Langues"
-    languajes1: "Les participants peuvent soumettre des excursions virtuelles dans les langues suivantes :"
-    languajes2: "anglais, allemand, espagnol, français, grec, hongrois, italien, néerlandais et roumain."
-    register: "Comment s'inscrire au concours ?"
-    register2: "Vous devez identifier votre excursion virtuelle avec le mot-clé"
-    register3: "ViSHCompetition2013"
-    register4: "suivi du nom de la catégorie dans laquelle vous souhaitez soumettre votre contribution."
-    register5: "Une excursion virtuelle peut être soumise dans plusieurs catégories."
-    timeline: "Dates clés du concours"
-    timeline2: " lancement du concours"
-    timeline3: " date limite pour soumettre les contributions"
-    timeline4: " clôture de la procédure de sélection et annonce des lauréats"
-    timeline_date: "Le 20 octobre 2013 :"
-    timeline_date2: "Le 16 décembre 2013 :"
-    timeline_date3: "Le 23 décembre 2013 :"
-    criteria: "Critères de sélection"
-    criteria2: "Les excursions virtuelles seront classées en fonction du nombre de votes attribués par la communauté d'utilisateurs de la plateforme ViSH. Les 10 meilleures excursions seront ensuite évaluées en fonction des critères suivants :"
-    prizes: "Prix"
-    prizes2: "Les lauréats recevront des prix sous forme de chèques-cadeaux Amazon. * Pour chacune des catégories, un premier et un deuxième prix seront décernés."
-    prizes3: "Les grands vainqueurs se verront remettre des prix supplémentaires."
-    prizes4: "Par ailleurs, les 3 grands vainqueurs seront invités à assister à notre conférence, qui se tiendra à Bruxelles en janvier 2014."
-    prizes5: " est un code promotionnel pour la boutique en ligne Amazon, qui vous permettra d'acheter du matériel que vous estimez intéressant pour votre travail : des livres, des petits équipements technologiques, etc."
-    prizes_first_a: "1er prix : chèque-cadeau d'une valeur de 400 € "
-    prizes_second_a: "2e prix : chèque-cadeau d'une valeur de 200 € "
-    prizes_first: "1er prix : chèque-cadeau d'une valeur de 500 € "
-    prizes_second: "2e prix : chèque-cadeau d'une valeur de 300 € "
-    prizes_third: "3e prix : chèque-cadeau d'une valeur de 200 € "
-    amazon: "* Un chèque-cadeau Amazon "
-    ex_part: "Excursions participant au concours :"
-    filter: "Filtrer :"
-    All: "Toutes"
-    Maths: "Maths"
-    Physics: "Physics"
-    Chemistry: "Chemistry"
-    Biology: "Biology"
-    Geography: "Geography"
-    EnvironmentalStudies: "EnvironmentalStudies"
-    Engineering: "Engineering"
-    Humanities: "Humanities"
-    NaturalScience: "NaturalScience"
-    ComputerScience: "ComputerScience"
   copy_to_clip: "Copier dans le Presse-papiers"
   devise:
     tags: "mots-clés"
@@ -397,8 +357,6 @@ fr:
       info: "Info"
     document: "document"
     download_explanation: "Télécharger cette ressource sur votre périphérique"
-    helpquiz:
-      info1_html: "1. Test d'aide 1 pour le quiz<br>"
     info:
       age: "Âge"
     language:
@@ -436,6 +394,7 @@ fr:
       start_time: Start time
       title: Title
       type: Type
+      poster: "Ajouter une couverture"
     main_title: "Créer un nouvel événement"
     title_input: "Nom de cet événement"
     type:
@@ -570,11 +529,11 @@ fr:
         resource:
             title: "Ressource"
             description: "Insérer n'importe quel type de ressource dans le workshop."
-            text: "Vous pouvez ajouter à cet workshop toutes les ressources qui sont disponibles dans ViSH. Pour les ajouter, ouvrir la ressource à ViSH, copier son URL dans la barre d'outils du navigateur et coller dans la zone de texte suivante."
+            text: "Vous pouvez ajouter à cet workshop toutes les ressources qui sont disponibles dans Vish. Pour les ajouter, ouvrir la ressource à Vish, copier son URL dans la barre d'outils du navigateur et coller dans la zone de texte suivante."
         resource_gallery:
             title: "Galerie de ressources"
             description: "Ajouter une galerie de ressources."
-            text: "Galeries de ressource sont une composante de le workshop qui vous permettent d'inclure plusieurs ressources de n'importe quel type de ViSH et ont eux regroupés pour faciliter Regarde un. Insérer cet élément dans votre workshop et les ressources supplémentaires dans le moyen le plus simple et intuitif."
+            text: "Galeries de ressource sont une composante de le workshop qui vous permettent d'inclure plusieurs ressources de n'importe quel type de Vish et ont eux regroupés pour faciliter Regarde un. Insérer cet élément dans votre workshop et les ressources supplémentaires dans le moyen le plus simple et intuitif."
         contributions_gallery:
             title: "Galerie des contributions"
             description: "La Galerie de Contributions affiche les contributions envoyées à l'atelier."
@@ -585,7 +544,7 @@ fr:
             text: "Outre la description de le workshop et des missions définies à elle, vous devrez parfois la possibilité d'insérer un bloc de texte avec un autre but, comme une bibliographie ou d'autres données d'intérêt pour le workshop. Avec ce composant, vous pouvez ajouter un texte complètement personnalisé et modifiable à votre workshop."
     add_activity_modal:
       resource:
-        description: "Vous pouvez ajouter à cet workshop toutes les ressources qui sont disponibles dans ViSH. Pour les ajouter, ouvrir la ressource à ViSH, copier son URL dans la barre d'outils du navigateur et coller dans la zone de texte suivante."
+        description: "Vous pouvez ajouter à cet workshop toutes les ressources qui sont disponibles dans Vish. Pour les ajouter, ouvrir la ressource à Vish, copier son URL dans la barre d'outils du navigateur et coller dans la zone de texte suivante."
     new: "Nouveau Workshop"
     other: "Workshops"
     titles:
@@ -594,8 +553,9 @@ fr:
         show_main: "Voir le workshop"
   writing:
     actions:
-      add: "Ajouter du texte"
+      add: "Ajouter du Texte"
     confirm_delete: "Supprimer l'écriture?"
+    new: "Nouveau texte"
     title3: "Écrire le texte à ajouter"
   yesterday: "Hier"
   zipfile:

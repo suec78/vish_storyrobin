@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20150330095940) do
+ActiveRecord::Schema.define(:version => 20170308141313) do
 
   create_table "activities", :force => true do |t|
     t.integer  "activity_verb_id"
@@ -96,6 +96,16 @@ ActiveRecord::Schema.define(:version => 20150330095940) do
     t.integer  "avatar_file_size"
     t.datetime "avatar_updated_at"
     t.decimal  "teachers_qscore",                    :precision => 12, :scale => 6
+    t.integer  "license_id"
+    t.text     "original_author"
+    t.text     "license_attribution"
+    t.text     "license_custom"
+    t.decimal  "metadata_qscore",                    :precision => 12, :scale => 6
+    t.boolean  "allow_download",                                                    :default => true
+    t.boolean  "allow_comment",                                                     :default => true
+    t.boolean  "allow_clone",                                                       :default => true
+    t.text     "tag_array_text",                                                    :default => ""
+    t.decimal  "interaction_qscore",                 :precision => 12, :scale => 6
   end
 
   create_table "activity_objects_wa_resources_galleries", :id => false, :force => true do |t|
@@ -107,6 +117,11 @@ ActiveRecord::Schema.define(:version => 20150330095940) do
     t.string   "name",       :limit => 45
     t.datetime "created_at"
     t.datetime "updated_at"
+  end
+
+  create_table "actor_historial", :force => true do |t|
+    t.integer "actor_id"
+    t.integer "activity_object_id"
   end
 
   create_table "actor_keys", :force => true do |t|
@@ -132,7 +147,6 @@ ActiveRecord::Schema.define(:version => 20150330095940) do
     t.integer  "logo_file_size"
     t.datetime "logo_updated_at"
     t.string   "notification_settings"
-    t.boolean  "is_admin",              :default => false
     t.text     "category_order"
     t.string   "categories_view",       :default => "gallery"
   end
@@ -140,6 +154,11 @@ ActiveRecord::Schema.define(:version => 20150330095940) do
   add_index "actors", ["activity_object_id"], :name => "index_actors_on_activity_object_id"
   add_index "actors", ["email"], :name => "index_actors_on_email"
   add_index "actors", ["slug"], :name => "index_actors_on_slug", :unique => true
+
+  create_table "actors_roles", :id => false, :force => true do |t|
+    t.integer "role_id"
+    t.integer "actor_id"
+  end
 
   create_table "audiences", :force => true do |t|
     t.integer "relation_id"
@@ -188,6 +207,39 @@ ActiveRecord::Schema.define(:version => 20150330095940) do
   add_index "contacts", ["receiver_id"], :name => "index_contacts_on_receiver_id"
   add_index "contacts", ["sender_id"], :name => "index_contacts_on_sender_id"
 
+  create_table "contest_categories", :force => true do |t|
+    t.integer  "contest_id"
+    t.string   "name"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "contest_enrollments", :force => true do |t|
+    t.integer  "contest_id"
+    t.integer  "actor_id"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "contest_submissions", :force => true do |t|
+    t.integer  "contest_category_id"
+    t.integer  "activity_object_id"
+    t.integer  "actor_id"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "contests", :force => true do |t|
+    t.string   "name"
+    t.string   "template"
+    t.string   "status",       :default => "open"
+    t.text     "settings",     :default => "{}"
+    t.boolean  "show_in_ui",   :default => false
+    t.integer  "mail_list_id"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
   create_table "contributions", :force => true do |t|
     t.integer  "activity_object_id"
     t.integer  "wa_assignment_id"
@@ -200,6 +252,29 @@ ActiveRecord::Schema.define(:version => 20150330095940) do
     t.string   "subject",    :default => ""
     t.datetime "created_at",                 :null => false
     t.datetime "updated_at",                 :null => false
+  end
+
+  create_table "courses", :force => true do |t|
+    t.integer  "activity_object_id"
+    t.datetime "created_at",                                 :null => false
+    t.datetime "updated_at",                                 :null => false
+    t.date     "start_date"
+    t.date     "end_date"
+    t.boolean  "closed",                  :default => false
+    t.boolean  "restricted",              :default => false
+    t.string   "restriction_email"
+    t.string   "restriction_password"
+    t.string   "url"
+    t.string   "course_password"
+    t.string   "attachment_file_name"
+    t.string   "attachment_content_type"
+    t.integer  "attachment_file_size"
+    t.datetime "attachment_updated_at"
+  end
+
+  create_table "courses_users", :id => false, :force => true do |t|
+    t.integer "user_id"
+    t.integer "course_id"
   end
 
   create_table "documents", :force => true do |t|
@@ -251,16 +326,22 @@ ActiveRecord::Schema.define(:version => 20150330095940) do
   end
 
   create_table "excursions", :force => true do |t|
-    t.datetime "created_at",                            :null => false
-    t.datetime "updated_at",                            :null => false
+    t.datetime "created_at",                                 :null => false
+    t.datetime "updated_at",                                 :null => false
     t.integer  "activity_object_id"
     t.text     "json"
-    t.integer  "slide_count",        :default => 1
+    t.integer  "slide_count",             :default => 1
     t.text     "thumbnail_url"
-    t.boolean  "draft",              :default => false
-    t.text     "offline_manifest",   :default => ""
-    t.datetime "scorm_timestamp"
+    t.boolean  "draft",                   :default => false
+    t.text     "offline_manifest",        :default => ""
+    t.datetime "scorm2004_timestamp"
     t.datetime "pdf_timestamp"
+    t.string   "attachment_file_name"
+    t.string   "attachment_content_type"
+    t.integer  "attachment_file_size"
+    t.datetime "attachment_updated_at"
+    t.boolean  "notified_teacher",        :default => false
+    t.datetime "scorm12_timestamp"
   end
 
   create_table "groups", :force => true do |t|
@@ -271,15 +352,44 @@ ActiveRecord::Schema.define(:version => 20150330095940) do
 
   add_index "groups", ["actor_id"], :name => "index_groups_on_actor_id"
 
+  create_table "imscpfiles", :force => true do |t|
+    t.integer  "activity_object_id"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.text     "zipurl"
+    t.text     "lourl"
+    t.text     "zippath"
+    t.text     "lopath"
+    t.integer  "width",              :default => 800
+    t.integer  "height",             :default => 600
+    t.string   "file_file_name"
+    t.string   "file_content_type"
+    t.integer  "file_file_size"
+    t.datetime "file_updated_at"
+    t.string   "schema"
+    t.string   "schemaversion"
+    t.string   "imscp_version"
+    t.string   "lohref"
+    t.text     "lohrefs"
+    t.string   "loresourceurl"
+  end
+
+  create_table "licenses", :force => true do |t|
+    t.string   "key"
+    t.datetime "created_at", :null => false
+    t.datetime "updated_at", :null => false
+  end
+
   create_table "links", :force => true do |t|
     t.integer  "activity_object_id"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.string   "url"
+    t.text     "url"
     t.string   "callback_url"
     t.string   "image"
     t.integer  "width",              :default => 470
     t.integer  "height",             :default => 353
+    t.boolean  "is_embed",           :default => false
   end
 
   add_index "links", ["activity_object_id"], :name => "index_links_on_activity_object_id"
@@ -309,6 +419,22 @@ ActiveRecord::Schema.define(:version => 20150330095940) do
     t.decimal  "x3n",                :precision => 12, :scale => 6, :default => 0.0
     t.decimal  "interaction_qscore", :precision => 12, :scale => 6, :default => 0.0
     t.decimal  "qscore",             :precision => 12, :scale => 6, :default => 0.0
+  end
+
+  create_table "mail_list_items", :force => true do |t|
+    t.integer  "mail_list_id"
+    t.integer  "actor_id"
+    t.string   "email"
+    t.string   "name"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "mail_lists", :force => true do |t|
+    t.string   "name"
+    t.text     "settings",   :default => "{}"
+    t.datetime "created_at"
+    t.datetime "updated_at"
   end
 
   create_table "notifications", :force => true do |t|
@@ -357,6 +483,15 @@ ActiveRecord::Schema.define(:version => 20150330095940) do
   end
 
   add_index "posts", ["activity_object_id"], :name => "index_posts_on_activity_object_id"
+
+  create_table "private_student_groups", :force => true do |t|
+    t.integer  "owner_id"
+    t.text     "name"
+    t.text     "users_data"
+    t.datetime "created_at",                              :null => false
+    t.datetime "updated_at",                              :null => false
+    t.string   "teacher_notification", :default => "ALL"
+  end
 
   create_table "profiles", :force => true do |t|
     t.integer  "actor_id"
@@ -447,6 +582,13 @@ ActiveRecord::Schema.define(:version => 20150330095940) do
 
   add_index "remote_subjects", ["actor_id"], :name => "index_remote_subjects_on_actor_id"
 
+  create_table "roles", :force => true do |t|
+    t.string   "name"
+    t.integer  "value",      :default => 1
+    t.datetime "created_at",                :null => false
+    t.datetime "updated_at",                :null => false
+  end
+
   create_table "rooms", :force => true do |t|
     t.integer  "actor_id"
     t.string   "name"
@@ -455,6 +597,14 @@ ActiveRecord::Schema.define(:version => 20150330095940) do
   end
 
   add_index "rooms", ["actor_id"], :name => "index_rooms_on_actor_id"
+
+  create_table "rsevaluations", :force => true do |t|
+    t.integer  "actor_id"
+    t.text     "data"
+    t.string   "status",     :default => "0"
+    t.datetime "created_at",                  :null => false
+    t.datetime "updated_at",                  :null => false
+  end
 
   create_table "scormfiles", :force => true do |t|
     t.integer  "activity_object_id"
@@ -470,6 +620,31 @@ ActiveRecord::Schema.define(:version => 20150330095940) do
     t.string   "file_content_type"
     t.integer  "file_file_size"
     t.datetime "file_updated_at"
+    t.string   "schema"
+    t.string   "schemaversion"
+    t.string   "scorm_version"
+    t.string   "lohref"
+    t.string   "loresourceurl"
+  end
+
+  create_table "service_permissions", :force => true do |t|
+    t.integer  "owner_id"
+    t.string   "key"
+    t.datetime "created_at", :null => false
+    t.datetime "updated_at", :null => false
+  end
+
+  create_table "service_requests", :force => true do |t|
+    t.integer  "owner_id"
+    t.string   "status",                  :default => "Pending"
+    t.string   "type"
+    t.text     "description"
+    t.string   "attachment_file_name"
+    t.string   "attachment_content_type"
+    t.integer  "attachment_file_size"
+    t.datetime "attachment_updated_at"
+    t.datetime "created_at",                                     :null => false
+    t.datetime "updated_at",                                     :null => false
   end
 
   create_table "shortened_urls", :force => true do |t|
@@ -561,24 +736,24 @@ ActiveRecord::Schema.define(:version => 20150330095940) do
   end
 
   create_table "users", :force => true do |t|
-    t.string   "encrypted_password",     :default => ""
+    t.string   "encrypted_password",       :default => ""
     t.string   "password_salt"
     t.string   "reset_password_token"
     t.datetime "reset_password_sent_at"
     t.datetime "remember_created_at"
-    t.integer  "sign_in_count",          :default => 0
+    t.integer  "sign_in_count",            :default => 0
     t.datetime "current_sign_in_at"
     t.datetime "last_sign_in_at"
     t.string   "current_sign_in_ip"
     t.string   "last_sign_in_ip"
     t.string   "authentication_token"
-    t.datetime "created_at",                                 :null => false
-    t.datetime "updated_at",                                 :null => false
+    t.datetime "created_at",                                   :null => false
+    t.datetime "updated_at",                                   :null => false
     t.integer  "actor_id"
     t.string   "language"
-    t.boolean  "connected",              :default => false
-    t.string   "status",                 :default => "chat"
-    t.boolean  "chat_enabled",           :default => true
+    t.boolean  "connected",                :default => false
+    t.string   "status",                   :default => "chat"
+    t.boolean  "chat_enabled",             :default => true
     t.integer  "occupation"
     t.string   "invitation_token"
     t.datetime "invitation_created_at"
@@ -587,6 +762,7 @@ ActiveRecord::Schema.define(:version => 20150330095940) do
     t.integer  "invitation_limit"
     t.integer  "invited_by_id"
     t.string   "invited_by_type"
+    t.integer  "private_student_group_id"
   end
 
   add_index "users", ["actor_id"], :name => "index_users_on_actor_id"
@@ -632,6 +808,14 @@ ActiveRecord::Schema.define(:version => 20150330095940) do
     t.datetime "updated_at", :null => false
   end
 
+  create_table "wapp_auth_tokens", :force => true do |t|
+    t.integer  "actor_id"
+    t.string   "auth_token"
+    t.datetime "expire_at"
+    t.datetime "created_at", :null => false
+    t.datetime "updated_at", :null => false
+  end
+
   create_table "webapps", :force => true do |t|
     t.integer  "activity_object_id"
     t.datetime "created_at"
@@ -648,6 +832,11 @@ ActiveRecord::Schema.define(:version => 20150330095940) do
     t.datetime "file_updated_at"
   end
 
+  create_table "words", :force => true do |t|
+    t.string  "value"
+    t.integer "occurrences", :default => 0
+  end
+
   create_table "workshop_activities", :force => true do |t|
     t.integer  "workshop_id"
     t.integer  "wa_id"
@@ -661,9 +850,13 @@ ActiveRecord::Schema.define(:version => 20150330095940) do
 
   create_table "workshops", :force => true do |t|
     t.integer  "activity_object_id"
-    t.boolean  "draft",              :default => true
-    t.datetime "created_at",                           :null => false
-    t.datetime "updated_at",                           :null => false
+    t.boolean  "draft",               :default => true
+    t.datetime "created_at",                            :null => false
+    t.datetime "updated_at",                            :null => false
+    t.string   "banner_file_name"
+    t.string   "banner_content_type"
+    t.integer  "banner_file_size"
+    t.datetime "banner_updated_at"
   end
 
   create_table "writings", :force => true do |t|

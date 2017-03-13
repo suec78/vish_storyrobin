@@ -1,7 +1,7 @@
 class UsersController < ApplicationController
   include SocialStream::Controllers::Subjects
 
-  load_and_authorize_resource :except => [:current]
+  load_and_authorize_resource :except => [:current, :update_role]
 
   before_filter :authenticate_user!, only: :current
 
@@ -19,10 +19,43 @@ class UsersController < ApplicationController
     end
   end
 
+  def edit
+    redirect_to user_path(resource)
+  end
+
+  def edit_role
+    authorize! :edit_roles, resource
+  end
+
+  def update_role
+    authorize! :edit_roles, resource
+
+    user_was_admin = resource.admin?
+    role = Role.find(params["role"]) rescue nil
+    unless role.nil?
+      resource.roles = [role]
+    end
+    user_is_admin = resource.admin?
+
+    if !user_was_admin and user_is_admin
+      #promote
+      resource.make_me_admin
+    elsif user_was_admin and !user_is_admin
+      #degrade
+      resource.degrade
+    end
+
+    redirect_to user_path(resource)
+  end
+
   def excursions
     respond_to do |format|
       format.html{        
-        render :partial => 'excursions/profile_excursions', :locals => {:scope => :me, :limit => 0, :page=> params[:page]||1, :sort_by=> params[:sort_by]||"updated_at"}, :layout => false
+        if !params[:page] || params[:tab] == "excursions" || (params[:page] && (params[:page] == 1))
+          render :partial => 'excursions/profile_excursions_list', :locals => {:scope => :me, :limit => 0, :page=> 1, :sort_by=> params[:sort_by]||"updated_at"}, :layout => false
+        else
+          render :partial => 'excursions/profile_excursions_page', :locals => {:scope => :me, :limit => 0, :page=> params[:page], :sort_by=> params[:sort_by]||"updated_at"}, :layout => false
+        end
       }
     end
   end
@@ -30,7 +63,11 @@ class UsersController < ApplicationController
   def workshops
     respond_to do |format|
       format.html{        
-        render :partial => 'workshops/profile_workshops', :locals => {:scope => :me, :limit => 0, :page=> params[:page]||1, :sort_by=> params[:sort_by]||"updated_at"}, :layout => false
+        if !params[:page] || params[:tab] == "workshops" || (params[:page] && (params[:page] == 1))
+          render :partial => 'workshops/profile_workshops_list', :locals => {:scope => :me, :limit => 0, :page=> 1, :sort_by=> params[:sort_by]||"updated_at"}, :layout => false
+        else
+          render :partial => 'workshops/profile_workshops_page', :locals => {:scope => :me, :limit => 0, :page=> params[:page], :sort_by=> params[:sort_by]||"updated_at"}, :layout => false
+        end
       }
     end
   end
@@ -38,10 +75,10 @@ class UsersController < ApplicationController
   def resources
     respond_to do |format|
       format.html{        
-        if !params[:page] || params[:tab] == "resources" || (params[:page] && (params[:page] == 1 || params[:page]==0))
-          render :partial => 'repositories/profile_resources', :locals => {:scope => :me, :limit => 0, :page=> params[:page]||1, :sort_by=> params[:sort_by]||"updated_at"}, :layout => false
+        if !params[:page] || params[:tab] == "resources" || (params[:page] && (params[:page] == 1))
+          render :partial => 'repositories/profile_resources_list', :locals => {:scope => :me, :limit => 0, :page=> 1, :sort_by=> params[:sort_by]||"updated_at"}, :layout => false
         else
-          render :partial => 'repositories/resources', :locals => {:scope => :me, :limit => 0, :page=> params[:page], :sort_by=> params[:sort_by]||"updated_at"}, :layout => false
+          render :partial => 'repositories/profile_resources_page', :locals => {:scope => :me, :limit => 0, :page=> params[:page], :sort_by=> params[:sort_by]||"updated_at"}, :layout => false
         end
       }
     end
@@ -50,10 +87,10 @@ class UsersController < ApplicationController
   def events
     respond_to do |format|
       format.html{       
-        if !params[:page] || params[:tab] == "events" || (params[:page] && (params[:page] == 1 || params[:page]==0)) 
-          render :partial => 'events/profile_events', :locals => {:scope => :me, :limit => 0, :page=> params[:page]||1, :sort_by=> params[:sort_by]||"updated_at"}, :layout => false
+        if !params[:page] || params[:tab] == "events" || (params[:page] && (params[:page] == 1)) 
+          render :partial => 'events/profile_events_list', :locals => {:scope => :me, :limit => 0, :page=> params[:page]||1, :sort_by=> params[:sort_by]||"updated_at"}, :layout => false
         else
-          render :partial => 'events/events', :locals => {:scope => :me, :limit => 0, :page=> params[:page], :sort_by=> params[:sort_by]||"updated_at"}, :layout => false
+          render :partial => 'events/profile_events_page', :locals => {:scope => :me, :limit => 0, :page=> params[:page], :sort_by=> params[:sort_by]||"updated_at"}, :layout => false
         end
       }
     end
@@ -63,7 +100,7 @@ class UsersController < ApplicationController
     respond_to do |format|
       format.html{
         #Categories do not have pageless
-        render :partial => 'categories/profile_categories', :locals => {:scope => :me, :limit => 0, :page=> params[:page]||1, :sort_by=> params[:sort_by]||"updated_at"}, :layout => false
+        render :partial => 'categories/profile_categories_list', :locals => {:scope => :me, :limit => 0, :page=> params[:page]||1, :sort_by=> params[:sort_by]||"updated_at"}, :layout => false
       }
     end
   end
@@ -88,26 +125,6 @@ class UsersController < ApplicationController
     respond_to do |format|
       format.json { render json: current_user.to_json }
     end
-  end
-
-  #Make user admin
-  def promote
-    u = User.find_by_slug(params[:id])
-    authorize! :make_admin, u
-
-    u.make_me_admin
-
-    redirect_to user_path(u)
-  end
-
-  #Degrade admin to user
-  def degrade
-    u = User.find_by_slug(params[:id])
-    authorize! :make_admin, u
-    
-    u.degrade
-
-    redirect_to user_path(u)
   end
 
   def destroy

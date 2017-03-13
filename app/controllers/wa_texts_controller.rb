@@ -10,7 +10,7 @@ class WaTextsController < ApplicationController
   # REST methods
   #############
 
-  def create
+  def create   
     super do |format|
       format.html {
          unless resource.errors.blank?

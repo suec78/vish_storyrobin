@@ -1,20 +1,29 @@
 Vish::Application.routes.draw do
 
   match 'announcements/:id/hide', to: 'announcements#hide', as: 'hide_announcement'
-
   resources :pages
   get "/static/:permalink" => redirect("/pages/%{permalink}")
 
+  #Devise routes
+  deviseControllers = {
+    :omniauth_callbacks => "omniauth_callbacks",
+    :registrations => "registrations",
+    :sessions => "sessions",
+    :passwords => "passwords"
+  }
+  deviseSkipControllers = []
 
+  deviseControllers[:invitations] = "devise_invitations" if Vish::Application.config.invitations
+  deviseControllers[:sessions] = "devise/cas_sessions" if Vish::Application.config.cas
+  deviseSkipControllers = [:registrations].push(:registrations) if Vish::Application.config.register_policy == "INVITATION_ONLY"
 
-  if Vish::Application.config.APP_CONFIG["register_policy"] == "INVITATION_ONLY"
-    devise_for :users, :controllers => {:omniauth_callbacks => "omniauth_callbacks", registrations: "registrations", :sessions => "sessions", :passwords => "passwords", :invitations => "devise_invitations" }, :skip => [:registrations] 
-      as :user do
-        get 'users/edit' => 'devise/registrations#edit', :as => 'edit_user_registration'
-        put 'users' => 'devise/registrations#update', :as => 'user_registration'
-      end
-  else
-    devise_for :users, :controllers => {:omniauth_callbacks => "omniauth_callbacks", registrations: "registrations", :sessions => "sessions", :passwords => "passwords", :invitations => "devise_invitations" }  
+  devise_for :users, :controllers => deviseControllers, :skip => deviseSkipControllers
+
+  if Vish::Application.config.register_policy == "INVITATION_ONLY"
+    as :user do
+      get 'users/edit' => 'devise/registrations#edit', :as => 'edit_user_registration'
+      put 'users' => 'devise/registrations#update', :as => 'user_registration'
+    end
   end
 
   match 'users/:id/excursions' => 'users#excursions'
@@ -24,8 +33,8 @@ Vish::Application.routes.draw do
   match 'users/:id/categories' => 'users#categories'
   match 'users/:id/followers' => 'users#followers'
   match 'users/:id/followings' => 'users#followings'
-  match 'users/:id/promote' => 'users#promote'
-  match 'users/:id/degrade' => 'users#degrade'
+  match 'users/:id/edit_role' => 'users#edit_role'
+  match 'users/:id/update_role' => 'users#update_role'
   match 'users/:id/profile' => 'users#show'
 
   resource :session_locale
@@ -38,23 +47,29 @@ Vish::Application.routes.draw do
   match 'overview' => 'static#overview'
   match 'faq' => 'static#overview'
   match 'help' => 'static#overview'
-  match 'legal_notice' => 'static#legal_notice'
-  match 'privacy' => 'static#privacy'
+  match 'legal_notice' => 'static#terms_of_use'
+  match 'privacy_policy' => 'static#privacy_policy'
+  match 'terms_of_use' => 'static#terms_of_use'
+  
   #Download the user manual and count the number of downloads
   match 'user_manual' => 'static#download_user_manual'
-  
+  match 'download_perm_request' => 'static#download_perm_request'
+
   #APIs
   match '/apis/search' => 'federated_search#search'
   match '/apis/iframe_api' => 'excursions#iframe_api'
   match '/apis/recommender' => 'recommender#api_resource_suggestions'
+  match '/apis/wapp_token/:auth_token' => 'wapp_auth_tokens#show'
+  match '/apis/wapp_token' => 'wapp_auth_tokens#create'
 
   #Search
   match '/search/advanced' => 'search#advanced'
   #LRE proxy
   match 'lre/search' => 'lre#search_lre'
 
-  #AO avatars
+  #AO avatars and metadata
   match 'activity_objects/avatar/:id' => 'activity_object#show_avatar'
+  match 'activity_objects/:id/metadata' => 'activity_object#metadata'
 
   #Thumbnails
   match '/thumbnails' => 'excursions#excursion_thumbnails'
@@ -62,12 +77,15 @@ Vish::Application.routes.draw do
   match 'excursions/last_slide' => 'excursions#last_slide'
   match 'excursions/preview' => 'excursions#preview'
   match 'excursions/interactions' => 'excursions#interactions'
- 
+
   match 'excursions/:id/metadata' => 'excursions#metadata'
   match 'excursions/:id/scormMetadata' => 'excursions#scormMetadata'
   match 'excursions/:id/clone' => 'excursions#clone'
   match '/excursions/:id/evaluate' => 'excursions#evaluate'
-  
+  match '/excursions/attachments' => 'excursions#upload_attachment'
+  match '/excursions/:id/attachment' => 'excursions#show_attachment'
+  match '/excursions/:id/allow_publishing' => 'excursions#allow_publishing'
+
   match '/excursions/:id.mashme' => 'excursions#show', :defaults => { :format => "gateway", :gateway => 'mashme' }
   match '/excursions/:id.embed' => 'excursions#show', :defaults => { :format => "full" }
 
@@ -83,13 +101,20 @@ Vish::Application.routes.draw do
   resources :workshops
 
   #Workshops Activities
-  resources :wa_assignments
-  resources :wa_resources
-  resources :contributions
+  resources :wa_assignments, :except => [:index]
+  resources :wa_resources, :except => [:index]
+  resources :contributions, :except => [:index]
   match '/wa_resources_galleries/:id/add_resource' => 'wa_resources_galleries#add_resource'
-  resources :wa_resources_galleries
-  resources :wa_contributions_galleries
-  resources :wa_texts
+  resources :wa_resources_galleries, :except => [:index]
+  resources :wa_contributions_galleries, :except => [:index]
+  resources :wa_texts, :except => [:index]
+
+  #courses
+  resources :courses do
+    get 'attachment', :on => :member
+    post 'join', :on => :member
+    post 'leave', :on => :member
+  end
 
   #Quiz Sessions
   resources :quiz_sessions do
@@ -101,9 +126,9 @@ Vish::Application.routes.draw do
   match 'qs/:id' => 'quiz_sessions#show'
 
   #PDF to Excursion
-  resources :pdfexes
+  resources :pdfexes, :only => [:new, :create, :show]
 
-    #Categories
+  #Categories
   match '/categories/categorize' => 'categories#categorize', :via => :post
   match '/categories/edit_categories' => 'categories#edit_categories', :via => :post
   match '/categories/settings' => 'categories#settings', :via => :post
@@ -111,16 +136,54 @@ Vish::Application.routes.draw do
 
   #Catalogue
   match '/catalogue' => 'catalogue#index'
-  match '/catalogue/:category' => 'catalogue#show'
 
-  #Competitions
-  match 'contest' => 'static#contest'
-  match 'contest_all' => 'static#contest_all'
+  #ServiceRequets
+  resources :service_requests do
+    get 'attachment', :on => :member
+    get 'accept', :on => :member
+  end
+  namespace :service_request do
+    resources :private_student_groups do
+      get 'duplicated', :on => :collection
+    end
+  end
+
+  #PrivateStudentGroups
+  resources :private_student_groups do
+    get 'credentials', :on => :member
+  end
+
+  match '/private_student_groups/:id/change_teacher_notifications' => 'private_student_groups#change_teacher_notifications', :via => :post
+  match '/private_student_groups/notify_teacher' => 'private_student_groups#notify_teacher', :via => :post
+
+  #service_permissions
+  match 'service_permissions/update_permissions' => 'service_permissions#update_permissions', :via => :post
+
+  #MaiL lists
+  resources :mail_lists, :only => [:show] do
+    get 'subscribe', :on => :member
+    post 'subscribed', :on => :member
+    get 'unsubscribe', :on => :member
+    post 'unsubscribed', :on => :member
+  end
+
+  # Contests
+  resources :contests do
+    post 'enroll', :on => :member
+    post 'disenroll', :on => :member
+    get 'new_resource_submission', :on => :member
+    post 'submit', :on => :member
+    post 'remove_submit', :on => :member
+  end
+  match 'contest/:name' => 'contests#show'
+  match 'contest/:name/page/:page' => 'contests#show'
+  match 'contests/:id/page/:page' => 'contests#show'
 
   #Administration panel
   match 'admin' => 'admin#index'
   match 'admin/closed_reports' => 'admin#closed_reports'
   match 'admin/users' => 'admin#users'
+  match 'admin/requests' => 'admin#requests'
 
   #Spam reports
   resources :spam_reports
@@ -130,6 +193,10 @@ Vish::Application.routes.draw do
   # Shorten URLs
   # Add this at the end so other URLs take prio
   match '/s/:id' => "shortener/shortened_urls#show"
+
+  #ViSHRS evaluation
+  match '/rsevaluation', to: 'rsevaluation#start', via: [:get]
+  match '/rsevaluation/step/:step', to: 'rsevaluation#step', via: [:post]
 
   # for OAI-MPH
   mount OaiRepository::Engine => "/oai_repository"

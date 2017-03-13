@@ -1,64 +1,50 @@
-<% 
-  if params["contribution"].blank?
-    @contribution = nil
-  else
-    @contribution = Contribution.find_by_id(params["contribution"])
-  end
-%>
+<%content_for :title do %><%= document.title %> - <%= !document.author.nil? ? document.author.name : "" %><% end %>
+<%content_for :description do %><%=t("site.meta_desc.document")+document.title + ". " + (document.description ? document.description : "")%><% end %>
+<%content_for :keywords do %><%= document.tag_list %><% end %>
+<%content_for :alternate_urls do%><%=raw alternate_urls(polymorphic_url(document), document)%><%end%>
+<%content_for :canonical do%><%=polymorphic_url(document, :locale => params[:locale])%><%end%>
+
+<% @contribution = Contribution.find_by_id(params["contribution"]) %>
 
 <section id="<%= document.class.to_s.underscore %> "class="layout_show">
 
-  <%if @contribution%>
+  <% if @contribution %>
     <%= render :partial => 'application/breadcrumb_path', :locals  => { :path => @contribution.parents_path } %>
-  <%end%>
-
-  <% document_profile_subject ||= document.owner_subject %>
-  <%= render :partial => 'objects/show', :locals  => { :object => document } %>
-  
-  <% content_for :title do %>
-    <%= document_profile_subject.name + ": " + t('repository.title') %>
   <% end %>
 
+  <% document_profile_subject ||= document.owner_subject %>
   
-  <!--visor-->
+  <!-- Recommendations -->
+  <%= render :partial => 'recommender/sidebar', :locals  => {:resources => RecommenderSystem.resource_suggestions({:user => current_subject, :lo => document, :n=>10})} %>
+  
+  <div class="doc-show">
+  
     <div class="box-show">
-      <div class="container-visor">
-        <div class="caja-elementos">
+      <div class="viewerContainer">
+        <div class="elementsBox">
           <%= render partial: "#{ document.class.to_s.tableize }/#{ document.class.to_s.underscore }_show",
-        locals: { document.class.to_s.underscore.to_sym => document } %>
+            locals: { document.class.to_s.underscore.to_sym => document } %>
         </div>
       </div>
     </div>
 
-    <!-- Recommendations -->
-    <!-- No option[:models] on RecommenderSystem.resource_suggestions mean all resources -->
-    <% rsEngine = TrackingSystemEntry.getRandomRSEngine
-       rec = TrackingSystemEntry.getRSCode(rsEngine)
-       resource_suggestions = RecommenderSystem.resource_suggestions(current_subject,document,{:n=>16, :recEngine => rsEngine, :track => true, :request => request})
-    %>
-    <%= render :partial => 'recommender/sidebar', :locals  => { :resources => resource_suggestions, :rec => rec  } %>
-
     <div class="description-activity">
-      <!-- Tool tab -->
+      <!--tool tab-->
       <div class="box_description">
         <div class="excursion_tool">
           <%= render :partial => 'common_documents/document-tool-tab', :locals => { :document => document } %>
-        </div>     
+        </div>
       </div>
-      
-      <!--activity (comments, ...) -->
+      <!--activity-->
       <div class="activity-box">
         <%= render :partial => 'common_documents/activity', :locals => { :document => document } %>
       </div>
     </div>
 
-    <% if @contribution %>
-      <%= render :partial => 'contributions/contributable_activity', :locals => { :contribution => @contribution } %>
-    <% end %>
+  </div>
+
+  <% if @contribution %>
+    <%= render :partial => 'contributions/contributable_activity', :locals => { :contribution => @contribution } %>
+  <% end %>
 
 </section>
-
-
-
-
-

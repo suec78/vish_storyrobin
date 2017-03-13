@@ -55,8 +55,8 @@ class SearchController < ApplicationController
     page =  ( mode == :quick ? 1 : params[:page] )
     limit = ( mode == :quick ? 7 : RESULTS_SEARCH_PER_PAGE )
 
-    if !params[:sort_by] && (params[:catalogue] || params[:directory])
-      if (params[:catalogue] && VishConfig.getCatalogueModels() === ["Excursion"]) || (params[:directory] && VishConfig.getDirectoryModels() === ["Excursion"])
+    if !params[:sort_by] && (params[:catalogue] || params[:directory] || params[:archive])
+      if (params[:catalogue] && VishConfig.getCatalogueModels() === ["Excursion"]) || (params[:directory] && VishConfig.getDirectoryModels() === ["Excursion"]) || (params[:archive] && VishConfig.getArchiveModels() === ["Excursion"])
         params[:sort_by] = "quality"
       else
         params[:sort_by] = "popularity"
@@ -111,9 +111,10 @@ class SearchController < ApplicationController
         params[:type] = VishConfig.getCatalogueModels().join(",")
       elsif params[:directory]
         params[:type] = VishConfig.getDirectoryModels().join(",")
+      elsif params[:archive]
+        params[:type] = VishConfig.getArchiveModels().join(",")
       end
     end
-
     models = ( mode == :quick ? SocialStream::Search.models(mode, params[:type]) : processTypeParam(params[:type]) )
 
     keywords = params[:q]
@@ -122,8 +123,8 @@ class SearchController < ApplicationController
     categories = nil
     if params[:category_ids].is_a? String
       if Vish::Application.config.catalogue['mode'] == "matchtag"
-          #Mode matchtag
-          categories = params[:category_ids]
+        #Mode matchtag
+        categories = params[:category_ids]
       else
         #Mode matchany
         keywords = []
@@ -134,21 +135,23 @@ class SearchController < ApplicationController
       end
     end
 
-    RecommenderSystem.search({:category_ids => categories, :keywords=>keywords, :n=>limit, :page => page, :order => order, :models => models, :ids_to_avoid=>params[:ids_to_avoid], :startDate => params[:startDate], :endDate => params[:endDate], :language => params[:language], :qualityThreshold => params[:qualityThreshold], :tags => params[:tags], :tag_ids => params[:tag_ids], :age_min => params[:age_min], :age_max => params[:age_max] })
+    Search.search({:category_ids => categories, :query => keywords, :n=>limit, :page => page, :order => order, :models => models, :ids_to_avoid=>params[:ids_to_avoid], :startDate => params[:startDate], :endDate => params[:endDate], :language => params[:language], :qualityThreshold => params[:qualityThreshold], :tags => params[:tags], :tag_ids => params[:tag_ids], :age_min => params[:age_min], :age_max => params[:age_max] })
   end
 
   def processTypeParam(type)
     models = []    
     
     unless type.blank?
-      allAvailableModels = VishConfig.getAllAvailableAndFixedModels(:include_subtypes => true).reject{|m| m=="Category"}
+      allAvailableModels = VishConfig.getAllAvailableAndFixedModels(:include_subtypes => true)
       # Available Types: all available models and the alias 'Resource' and 'learning_object'
       allAvailableTypes = allAvailableModels + ["Resource", "Learning_object"]
 
       types = type.split(",") & allAvailableTypes
 
       if types.include? "Learning_object"
-        types.concat(["Excursion", "Resource", "Event", "Workshop"])
+        los = VishConfig.getSearchModels(:include_users => false)
+        los.delete("User")
+        types.concat(los)
       end
 
       if types.include? "Resource"
@@ -169,7 +172,7 @@ class SearchController < ApplicationController
 
     if models.empty?
       #Default models, all
-      models = VishConfig.getAllAvailableAndFixedModels({:return_instances => true, :include_subtypes => true}).reject{|m| m==Category}
+      models = VishConfig.getSearchModels({:return_instances => true, :include_subtypes => true})
     end
 
     models.uniq!

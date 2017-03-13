@@ -1,16 +1,26 @@
 require 'builder'
 
 class Excursion < ActiveRecord::Base
+ 
+  attr_accessor :attachment_url
+  has_attached_file :attachment, 
+                    :url => '/:class/:id/attachment_file',
+                    :path => ':rails_root/documents/attachments/:id_partition/:filename.:extension'
+  validates_attachment_size :attachment, :less_than => 8.megabytes
+
   include SocialStream::Models::Object
   has_many :excursion_contributors, :dependent => :destroy
   has_many :contributors, :class_name => "Actor", :through => :excursion_contributors
 
+
   validates_presence_of :json
+  before_validation :fill_license
   after_save :parse_for_meta
   after_save :fix_post_activity_nil
-  after_destroy :remove_scorm
+  # after_save :send_to_loep
+  after_destroy :remove_scorms
   after_destroy :remove_pdf
-  
+
   define_index do
     activity_object_index
     
@@ -75,41 +85,47 @@ class Excursion < ActiveRecord::Base
   ## SCORM Management
   ####################
 
-  def to_scorm(controller)
-    if self.scorm_needs_generate
-      filePath = "#{Rails.root}/public/scorm/excursions/"
+  def self.scormFolderPath(version)
+    return "#{Rails.root}/public/scorm/" + version + "/excursions/"
+  end
+
+  def scormFilePath(version)
+    Excursion.scormFolderPath(version) + "#{self.id}.zip"
+  end
+
+  def to_scorm(controller,version="2004")
+    if self.scorm_needs_generate(version)
+      folderPath = Excursion.scormFolderPath(version)
       fileName = self.id
       json = JSON(self.json)
-      Excursion.createSCORM(filePath,fileName,json,self,controller)
-      self.update_column(:scorm_timestamp, Time.now)
+      Excursion.createSCORM(version,folderPath,fileName,json,self,controller)
+      self.update_column(((version=="12") ? :scorm12_timestamp : :scorm2004_timestamp), Time.now)
     end
   end
 
-  def scorm_needs_generate
-    if self.scorm_timestamp.nil? or self.updated_at > self.scorm_timestamp or !File.exist?("#{Rails.root}/public/scorm/excursions/#{self.id}.zip")
-      return true
-    else
-      return false
+  def scorm_needs_generate(version="2004")
+    scormTimestam = (version=="12") ? self.scorm12_timestamp : self.scorm2004_timestamp
+    scormTimestam.nil? or self.updated_at > scormTimestam or !File.exist?(self.scormFilePath(version))
+  end
+
+  def remove_scorms
+    ["12","2004"].each do |scormVersion|
+      scormFilePath = scormFilePath(scormVersion)
+      File.delete(scormFilePath) if File.exist?(scormFilePath)
     end
   end
 
-  def remove_scorm
-    if File.exist?("#{Rails.root}/public/scorm/excursions/#{self.id}.zip")
-      File.delete("#{Rails.root}/public/scorm/excursions/#{self.id}.zip") 
-    end
-  end
-
-  def self.createSCORM(filePath,fileName,json,excursion,controller)
+  def self.createSCORM(version="2004",folderPath,fileName,json,excursion,controller)
     require 'zip'
 
-    # filePath = "#{Rails.root}/public/scorm/excursions/"
+    # folderPath = "#{Rails.root}/public/scorm/version/excursions/"
     # fileName = self.id
     # json = JSON(self.json)
-    t = File.open("#{filePath}#{fileName}.zip", 'w')
+    t = File.open("#{folderPath}#{fileName}.zip", 'w')
 
     #Add manifest, main HTML file and additional files
     Zip::OutputStream.open(t.path) do |zos|
-      xml_manifest = Excursion.generate_scorm_manifest(json,excursion)
+      xml_manifest = Excursion.generate_scorm_manifest(version,json,excursion)
       zos.put_next_entry("imsmanifest.xml")
       zos.print xml_manifest.target!()
 
@@ -118,20 +134,24 @@ class Excursion < ActiveRecord::Base
     end
 
     #Add required XSD files and folders
-    xsdFileDir = "#{Rails.root}/public/xsd"
-    xsdFiles = ["adlcp_v1p3.xsd","adlnav_v1p3.xsd","adlseq_v1p3.xsd","imscp_v1p1.xsd","imsss_v1p0.xsd","lom.xsd"]
-    xsdFolders = ["common","extend","unique","vocab"]
+    schemaDirs = []
+    schemaFiles = []
+    #SCORM schema
+    schemaDirs.push("#{Rails.root}/public/schemas/SCORM_" + version)
+    #LOM schema
+    # schemaDirs.push("#{Rails.root}/public/schemas/lom")
+    schemaFiles.push("#{Rails.root}/public/schemas/lom/lom.xsd");
+    
+    schemaDirs.each do |dir|
+      zip_folder(t.path,dir)
+    end
 
-    #Add required xsd files
-    Zip::File.open(t.path, Zip::File::CREATE) { |zipfile|
-      xsdFiles.each do |xsdFileName|
-        zipfile.add(xsdFileName,xsdFileDir+"/"+xsdFileName)
-      end
-    }
-
-    #Add required XSD folders
-    xsdFolders.each do |xsdFolderName|
-      zip_folder(t.path,xsdFileDir,xsdFileDir+"/"+xsdFolderName)
+    if schemaFiles.length > 0
+      Zip::File.open(t.path, Zip::File::CREATE) { |zipfile|
+        schemaFiles.each do |filePath|
+          zipfile.add(File.basename(filePath),filePath)
+        end
+      }
     end
 
     #Copy SCORM assets (image, javascript and css files)
@@ -151,34 +171,39 @@ class Excursion < ActiveRecord::Base
   end
 
   def self.zip_folder(zipFilePath,root,dir=nil)
-    unless dir 
-      dir = root
-    end
+    dir = root unless dir
 
-    #Get subdirectories
-    Dir.chdir(dir)
-    subdir_list=Dir["*"].reject{|o| not File.directory?(o)}
-    subdir_list.each do |subdirectory|
-      subdirectory_path = "#{dir}/#{subdirectory}"
-      zip_folder(zipFilePath,root,subdirectory_path)
-    end
-
-    #Look for files
-    Zip::File.open(zipFilePath, Zip::File::CREATE) { |zipfile|
-      Dir.foreach(dir) do |item|
-        item_path = "#{dir}/#{item}"
-        if File.file?item_path
-          rpath = String.new(item_path)
-          rpath.slice! root + "/"
-          zipfile.add(rpath,item_path)
-        end
+    folderNames = []
+    fileNames = []
+    Dir.entries(dir).reject{|i| i.start_with?(".")}.each do |itemName|
+      itemPath = "#{dir}/#{itemName}"
+      if File.directory?(itemPath)
+        folderNames << itemName
+      elsif File.file?(itemPath)
+        fileNames << itemName
       end
-    }
+    end
+
+    #Subdirectories
+    folderNames.each do |subFolderName|
+      zip_folder(zipFilePath,root,"#{dir}/#{subFolderName}")
+    end
+
+    #Files
+    if fileNames.length > 0
+      Zip::File.open(zipFilePath, Zip::File::CREATE) { |zipfile|
+        fileNames.each do |fileName|
+          filePathInZip = String.new("#{dir}/#{fileName}").sub(root + "/","")
+          zipfile.add(filePathInZip,"#{dir}/#{fileName}")
+        end
+      }
+    end
   end
 
-  # Metadata based on LOM (Learning Object Metadata) standard
-  # LOM final draft: http://ltsc.ieee.org/wg12/files/LOM_1484_12_1_v1_Final_Draft.pdf
-  def self.generate_scorm_manifest(ejson,excursion,options=nil)
+  def self.generate_scorm_manifest(version,ejson,excursion,options={})
+    version = "2004" unless version.is_a? String and ["12","2004"].include?(version)
+
+    #Get manifest resource identifier and LOM identifier
     if excursion and !excursion.id.nil?
       identifier = excursion.id.to_s
       lomIdentifier = Rails.application.routes.url_helpers.excursion_url(:id => excursion.id)
@@ -196,43 +221,93 @@ class Excursion < ActiveRecord::Base
 
     myxml = ::Builder::XmlMarkup.new(:indent => 2)
     myxml.instruct! :xml, :version => "1.0", :encoding => "UTF-8"
-    myxml.manifest("identifier"=>"VISH_VIRTUAL_EXCURSION_" + identifier,
-      "version"=>"1.3",
-      "xmlns"=>"http://www.imsglobal.org/xsd/imscp_v1p1",
-      "xmlns:adlcp"=>"http://www.adlnet.org/xsd/adlcp_v1p3",
-      "xmlns:adlseq"=>"http://www.adlnet.org/xsd/adlseq_v1p3",
-      "xmlns:adlnav"=>"http://www.adlnet.org/xsd/adlnav_v1p3",
-      "xmlns:imsss"=>"http://www.imsglobal.org/xsd/imsss",
-      "xmlns:xsi"=>"http://www.w3.org/2001/XMLSchema-instance",
-      "xsi:schemaLocation"=>"http://www.imsglobal.org/xsd/imscp_v1p1 imscp_v1p1.xsd http://www.adlnet.org/xsd/adlcp_v1p3 adlcp_v1p3.xsd http://www.adlnet.org/xsd/adlseq_v1p3 adlseq_v1p3.xsd http://www.adlnet.org/xsd/adlnav_v1p3 adlnav_v1p3.xsd http://www.imsglobal.org/xsd/imsss imsss_v1p0.xsd",
-    ) do
 
-      myxml.metadata() do
+
+     #Select LOM Header options
+    manifestHeaderOptions = {}
+    manifestContent = {}
+
+    case version
+    when "12"
+      #SCORM 1.2
+      manifestHeaderOptions = {
+        "identifier"=>"VISH_PRESENTATION_" + identifier,
+        "version"=>"1.0",
+        "xmlns"=>"http://www.imsproject.org/xsd/imscp_rootv1p1p2",
+        "xmlns:adlcp"=>"http://www.adlnet.org/xsd/adlcp_rootv1p2",
+        "xmlns:xsi"=>"http://www.w3.org/2001/XMLSchema-instance",
+        "xsi:schemaLocation"=>"http://www.imsproject.org/xsd/imscp_rootv1p1p2 imscp_rootv1p1p2.xsd http://www.imsglobal.org/xsd/imsmd_rootv1p2p1 imsmd_rootv1p2p1.xsd http://www.adlnet.org/xsd/adlcp_rootv1p2 adlcp_rootv1p2.xsd"
+      }
+      manifestContent["schemaVersion"] = "1.2"
+    when "2004"
+      #SCORM 2004 4th Edition
+      manifestHeaderOptions =  { 
+        "identifier"=>"VISH_PRESENTATION_" + identifier,
+        "version"=>"1.3",
+        "xmlns"=>"http://www.imsglobal.org/xsd/imscp_v1p1",
+        "xmlns:adlcp"=>"http://www.adlnet.org/xsd/adlcp_v1p3",
+        "xmlns:adlseq"=>"http://www.adlnet.org/xsd/adlseq_v1p3",
+        "xmlns:adlnav"=>"http://www.adlnet.org/xsd/adlnav_v1p3",
+        "xmlns:imsss"=>"http://www.imsglobal.org/xsd/imsss",
+        "xmlns:xsi"=>"http://www.w3.org/2001/XMLSchema-instance",
+        "xsi:schemaLocation"=>"http://www.imsglobal.org/xsd/imscp_v1p1 imscp_v1p1.xsd http://www.adlnet.org/xsd/adlcp_v1p3 adlcp_v1p3.xsd http://www.adlnet.org/xsd/adlseq_v1p3 adlseq_v1p3.xsd http://www.adlnet.org/xsd/adlnav_v1p3 adlnav_v1p3.xsd http://www.imsglobal.org/xsd/imsss imsss_v1p0.xsd"
+      }
+      manifestContent["schemaVersion"] = "2004 4th Edition"
+    else
+      #Future SCORM versions
+    end
+
+    myxml.manifest(manifestHeaderOptions) do
+
+      myxml.metadata do
         myxml.schema("ADL SCORM")
-        myxml.schemaversion("2004 4th Edition")
+        myxml.schemaversion(manifestContent["schemaVersion"])
         #Add LOM metadata
-        Excursion.generate_LOM_metadata(ejson,excursion,{:target => myxml, :id => lomIdentifier, :LOMschema => (options and options[:LOMschema]) ? options[:LOMschema] : "custom"})
+        Excursion.generate_LOM_metadata(ejson,excursion,{:target => myxml, :id => lomIdentifier, :LOMschema => (options[:LOMschema]) ? options[:LOMschema] : "custom", :scormVersion => version})
       end
 
       myxml.organizations('default'=>"defaultOrganization") do
-        myxml.organization('identifier'=>"defaultOrganization", 'structure'=>"hierarchical") do
+        myxml.organization('identifier'=>"defaultOrganization") do
           if ejson["title"]
             myxml.title(ejson["title"])
           else
             myxml.title("Untitled")
           end
-          myxml.item('identifier'=>"VIRTUAL_EXCURSION_" + identifier,'identifierref'=>"VIRTUAL_EXCURSION_" + identifier + "_RESOURCE") do
+          itemOptions = {
+            'identifier'=>"PRESENTATION_" + identifier,
+            'identifierref'=>"PRESENTATION_" + identifier + "_RESOURCE"
+          }
+          if version == "12"
+            itemOptions["isvisible"] = "true"
+          end
+          myxml.item(itemOptions) do
             if ejson["title"]
               myxml.title(ejson["title"])
             else
               myxml.title("Untitled")
             end
+            if version == "12"
+              myxml.tag!("adlcp:masteryscore") do
+                myxml.text!("50")
+              end
+            end
           end
         end
       end
 
+      resourceOptions = {
+        'identifier'=>"PRESENTATION_" + identifier + "_RESOURCE",
+        'type'=>"webcontent",
+        'href'=>"excursion.html",
+      }
+      if version == "12"
+        resourceOptions['adlcp:scormtype'] = "sco"
+      else
+        resourceOptions['adlcp:scormType'] = "sco"
+      end
+
       myxml.resources do         
-        myxml.resource('identifier'=>"VIRTUAL_EXCURSION_" + identifier + "_RESOURCE", 'type'=>"webcontent", 'href'=>"excursion.html", 'adlcp:scormType'=>"sco") do
+        myxml.resource(resourceOptions) do
           myxml.file('href'=> "excursion.html")
         end
       end
@@ -248,15 +323,17 @@ class Excursion < ActiveRecord::Base
   ## LOM Metadata
   ####################
 
-  def self.generate_LOM_metadata(ejson, excursion, options=nil)
+  # Metadata based on LOM (Learning Object Metadata) standard
+  # LOM final draft: http://ltsc.ieee.org/wg12/files/LOM_1484_12_1_v1_Final_Draft.pdf
+  def self.generate_LOM_metadata(ejson, excursion, options={})
     _LOMschema = "custom"
 
     supportedLOMSchemas = ["custom","loose","ODS","ViSH"]
-    if options and options[:LOMschema] and supportedLOMSchemas.include? options[:LOMschema]
+    if supportedLOMSchemas.include? options[:LOMschema]
       _LOMschema = options[:LOMschema]
     end
 
-    if options and options[:target]
+    if options[:target]
       myxml = ::Builder::XmlMarkup.new(:indent => 2, :target => options[:target])
     else
       myxml = ::Builder::XmlMarkup.new(:indent => 2)
@@ -292,7 +369,7 @@ class Excursion < ActiveRecord::Base
       loIdIsURN = false
       loId = nil
 
-      if options and options[:id]
+      if options[:id]
           loId = options[:id].to_s
 
           begin
@@ -311,22 +388,23 @@ class Excursion < ActiveRecord::Base
           end
       end
 
+      #Excursion instance
+      excursionInstance = nil
+      if excursion
+        excursionInstance = excursion
+      elsif ejson["vishMetadata"] and ejson["vishMetadata"]["id"]
+        excursionInstance = Excursion.find_by_id(ejson["vishMetadata"]["id"])
+        excursionInstance = nil unless excursionInstance.public?
+      end
+
       #Location
       loLocation = nil
-      if excursion
-        if excursion.draft == false
-          loLocation = Rails.application.routes.url_helpers.excursion_url(:id => excursion.id)
-        end
-      elsif ejson["vishMetadata"] and ejson["vishMetadata"]["id"] and (ejson["vishMetadata"]["draft"] == false or ejson["vishMetadata"]["draft"] == "false")
-        begin
-          excursionInstance = Excursion.find(ejson["vishMetadata"]["id"])
-          loLocation = Rails.application.routes.url_helpers.excursion_url(:id => excursionInstance.id)
-        rescue
-        end
+      unless excursionInstance.nil?
+        loLocation = Rails.application.routes.url_helpers.excursion_url(:id => excursionInstance.id) if excursionInstance.draft == false
       end
 
       #Language (LO language and metadata language)
-      loLanguage = getLOMLoLanguage(ejson["language"], _LOMschema)
+      loLanguage = Lom.getLoLanguage(ejson["language"], _LOMschema)
       if loLanguage.nil?
         loLanOpts = {}
       else
@@ -357,6 +435,9 @@ class Excursion < ActiveRecord::Base
         atVersion = "v." + ejson["VEVersion"] + " "
       end
       atVersion = atVersion + "(http://github.com/ging/vish_editor)"
+
+
+      #Building LOM XML
 
       myxml.general do
         
@@ -443,7 +524,7 @@ class Excursion < ActiveRecord::Base
               myxml.source("LOMv1.0")
               myxml.value("author")
             end
-            authorEntity = generateVCard(authorName)
+            authorEntity = Lom.generateVCard(authorName)
             myxml.entity(authorEntity)
             
             myxml.date do
@@ -462,43 +543,38 @@ class Excursion < ActiveRecord::Base
             myxml.value("technical implementer")
           end
           authoringToolName = "Authoring Tool ViSH Editor " + atVersion
-          authoringToolEntity = generateVCard(authoringToolName)
+          authoringToolEntity = Lom.generateVCard(authoringToolName)
           myxml.entity(authoringToolEntity)
         end
       end
 
       myxml.metaMetadata do
-        if !loId.nil? and loIdIsURI and excursion
+        unless excursionInstance.nil?
           myxml.identifier do
             myxml.catalog("URI")
-            myxml.entry(Rails.application.routes.url_helpers.excursion_url(:id => excursion.id) + "/metadata.xml")
+            myxml.entry(Rails.application.routes.url_helpers.excursion_url(:id => excursionInstance.id) + "/metadata.xml")
           end
-
-          if !authorName.nil?
-            myxml.contribute do
-              myxml.role do
-                myxml.source("LOMv1.0")
-                myxml.value("creator")
-              end
-
-              creatorEntity = generateVCard(authorName)
-              myxml.entity(creatorEntity)
-              
-              myxml.date do
-                myxml.dateTime(loDate)
-                unless _LOMschema == "ODS"
-                  myxml.description do
-                    myxml.string("This date represents the date the author finished authoring the metadata of the indicated version of the Learning Object.", :language=> metadataLanguage)
-                  end
+        end
+        unless authorName.nil?
+          myxml.contribute do
+            myxml.role do
+              myxml.source("LOMv1.0")
+              myxml.value("creator")
+            end
+            myxml.entity(Lom.generateVCard(authorName))
+            myxml.date do
+              myxml.dateTime(loDate)
+              unless _LOMschema == "ODS"
+                myxml.description do
+                  myxml.string("This date represents the date the author finished authoring the metadata of the indicated version of the Learning Object.", :language=> metadataLanguage)
                 end
               end
-
             end
-          end
 
-          myxml.metadataSchema("LOMv1.0")
-          myxml.language(metadataLanguage)
+          end
         end
+        myxml.metadataSchema("LOMv1.0")
+        myxml.language(metadataLanguage)
       end
 
       myxml.technical do
@@ -518,11 +594,16 @@ class Excursion < ActiveRecord::Base
             end
           end
         end
+        myxml.installationRemarks do
+          myxml.string("Unzip the zip file and launch excursion.html in your browser.", :language=> metadataLanguage)
+        end
         myxml.otherPlatformRequirements do
-          myxml.string("HTML5-compliant web browser", :language=> metadataLanguage)
+          otherPlatformRequirements = "HTML5-compliant web browser"
           if ejson["VEVersion"]
-            myxml.string("ViSH Viewer " + atVersion, :language=> metadataLanguage)
+            otherPlatformRequirements += " and ViSH Viewer " + atVersion
           end
+          otherPlatformRequirements += "."
+          myxml.string(otherPlatformRequirements, :language=> metadataLanguage)
         end
       end
 
@@ -532,26 +613,37 @@ class Excursion < ActiveRecord::Base
           myxml.value("mixed")
         end
 
-        if !getLearningResourceType("lecture", _LOMschema).nil?
+        if !Lom.getLearningResourceType("lecture", _LOMschema).nil?
           myxml.learningResourceType do
             myxml.source("LOMv1.0")
             myxml.value("lecture")
           end
         end
-        if !getLearningResourceType("presentation", _LOMschema).nil?
+        if !Lom.getLearningResourceType("presentation", _LOMschema).nil?
           myxml.learningResourceType do
             myxml.source("LOMv1.0")
             myxml.value("presentation")
           end
         end
-        if !getLearningResourceType("slide", _LOMschema).nil?
+        if !Lom.getLearningResourceType("slide", _LOMschema).nil?
           myxml.learningResourceType do
             myxml.source("LOMv1.0")
             myxml.value("slide")
           end
         end
-        #TODO: Explore JSON and include more elements.
-
+        presentationElements = VishEditorUtils.getElementTypes(ejson) rescue []
+        if presentationElements.include?("text") and !Lom.getLearningResourceType("narrative text", _LOMschema).nil?
+          myxml.learningResourceType do
+            myxml.source("LOMv1.0")
+            myxml.value("narrative text")
+          end
+        end
+        if presentationElements.include?("quiz") and !Lom.getLearningResourceType("questionnaire", _LOMschema).nil?
+          myxml.learningResourceType do
+            myxml.source("LOMv1.0")
+            myxml.value("questionnaire")
+          end
+        end
         myxml.interactivityLevel do
           myxml.source("LOMv1.0")
           myxml.value("very high")
@@ -560,7 +652,7 @@ class Excursion < ActiveRecord::Base
           myxml.source("LOMv1.0")
           myxml.value("learner")
         end
-        _LOMcontext = readableContext(ejson["context"], _LOMschema)
+        _LOMcontext = Lom.readableContext(ejson["context"], _LOMschema)
         if _LOMcontext
           myxml.context do
             myxml.source("LOMv1.0")
@@ -585,7 +677,7 @@ class Excursion < ActiveRecord::Base
         end
         if ejson["educational_objectives"]
           myxml.description do
-              myxml.string(ejson["educational_objectives"], loLanOpts)
+            myxml.string(ejson["educational_objectives"], loLanOpts)
           end
         end
         if loLanguage
@@ -594,20 +686,90 @@ class Excursion < ActiveRecord::Base
       end
 
       myxml.rights do
+        loLicense = nil
+        unless ejson["license"].nil? or ejson["license"]["key"].blank?
+          licenseInstance = License.find_by_key(ejson["license"]["key"])
+          unless licenseInstance.nil?
+            loLicense = "License: '" + licenseInstance.name(metadataLanguage) + "'."
+          end
+        end
         myxml.cost do
           myxml.source("LOMv1.0")
           myxml.value("no")
         end
-
-        myxml.copyrightAndOtherRestrictions do
-          myxml.source("LOMv1.0")
-          myxml.value("yes")
+        unless loLicense.blank?
+          myxml.copyrightAndOtherRestrictions do
+            myxml.source("LOMv1.0")
+            myxml.value("yes")
+          end
         end
-
         myxml.description do
-          myxml.string("For additional information or questions regarding copyright, distribution and reproduction, visit " + Vish::Application.config.full_domain + "/legal_notice", :language=> metadataLanguage)
+          if loLicense.blank?
+            myxml.string("For additional information or questions regarding copyright, distribution and reproduction, visit " + Vish::Application.config.full_domain + "/terms_of_use .", :language=> metadataLanguage)
+          else
+            myxml.string(loLicense, :language=> metadataLanguage)
+          end
         end
+      end
 
+      #Annotations (include comments if any).
+      unless excursionInstance.nil?
+        comments = excursionInstance.post_activity.comments
+        unless comments.blank?
+          comments.map{|commentActivity| commentActivity.activity_objects.first}.reject{|c| c.nil? or c.description.blank?}.first(30).each do |comment|
+            myxml.annotation do
+              unless comment.author.nil? or comment.author.name.blank?
+                myxml.entity(Lom.generateVCard(comment.author.name))
+              end
+              unless comment.created_at.nil?
+                myxml.date do
+                  myxml.dateTime(comment.created_at.strftime("%Y-%m-%d").to_s)
+                end
+              end
+              myxml.description do
+                myxml.string(comment.description)
+              end
+            end
+          end
+        end
+      end
+
+      #Classification (include categories of the ViSH catalogue if any)
+      if VishConfig.getAvailableServices.include?("Catalogue")
+        if ejson["tags"] && ejson["tags"].kind_of?(Array)
+          categoryKeywords = Vish::Application.config.catalogue["category_keywords"]
+          catalogueKeywords = categoryKeywords.select{|k,v| v.is_a? Array and (v & ejson["tags"]).length > 1}.map{|k,v| k}
+          if catalogueKeywords.length > 0
+            myxml.classification do
+              myxml.purpose do
+                myxml.source("LOMv1.0")
+                myxml.value("discipline")
+              end
+              catalogueKeywords.each do |catalogueCategory|
+                myxml.taxonPath do
+                  myxml.source do
+                    myxml.string("ViSH", :language => metadataLanguage)
+                  end
+                  myxml.taxon do
+                    tagRecord = ActsAsTaggableOn::Tag.find_by_name(catalogueCategory)
+                    unless tagRecord.nil?
+                      myxml.id(tagRecord.id.to_s)
+                    end
+                    myxml.entry do
+                      myxml.string(catalogueCategory, :language => metadataLanguage)
+                    end
+                  end
+                end
+              end
+              catalogueKeywords.each do |catalogueCategory|
+                myxml.keyword do
+                  myxml.string(catalogueCategory, :language => metadataLanguage)
+                end
+              end
+            end
+          end
+          
+        end
       end
       
     end
@@ -615,112 +777,14 @@ class Excursion < ActiveRecord::Base
     myxml
   end
 
-  def self.getLOMLoLanguage(language, _LOMschema)
-    #List of language codes according to ISO-639:1988
-    # lanCodes = ["aa","ab","af","am","ar","as","ay","az","ba","be","bg","bh","bi","bn","bo","br","ca","co","cs","cy","da","de","dz","el","en","eo","es","et","eu","fa","fi","fj","fo","fr","fy","ga","gd","gl","gn","gu","gv","ha","he","hi","hr","hu","hy","ia","id","ie","ik","is","it","iu","ja","jw","ka","kk","kl","km","kn","ko","ks","ku","kw","ky","la","lb","ln","lo","lt","lv","mg","mi","mk","ml","mn","mo","mr","ms","mt","my","na","ne","nl","no","oc","om","or","pa","pl","ps","pt","qu","rm","rn","ro","ru","rw","sa","sd","se","sg","sh","si","sk","sl","sm","sn","so","sq","sr","ss","st","su","sv","sw","ta","te","tg","th","ti","tk","tl","tn","to","tr","ts","tt","tw","ug","uk","ur","uz","vi","vo","wo","xh","yi","yo","za","zh","zu"]
-    lanCodesMin = I18n.available_locales.map{|i| i.to_s}
-    lanCodesMin.concat(["it","pt"]).uniq!
-
-    case _LOMschema
-    when "ODS"
-      #ODS requires language, and admits blank language.
-      if language.nil? or language == "independent" or !lanCodesMin.include?(language)
-        return "none"
-      end
-    else
-      #When language=nil, no language attribute is provided
-      if language.nil? or language == "independent" or !lanCodesMin.include?(language)
-        return nil
-      end
-    end
-
-    #It is included in the lanCodes array
-    return language
-  end
-
-  def self.readableContext(context, _LOMschema)
-    case _LOMschema
-    when "ODS" 
-      #ODS LOM Extension
-      #According to ODS, context has to be one of ["primary education", "secondary education", "informal context"]
-      case context
-      when "preschool", "pEducation", "primary education", "school"
-        return "primary education"
-      when "sEducation", "higher education", "university"
-        return "secondary education"
-      when "training", "other"
-        return "informal context"
-      else
-        return nil
-      end
-    when "ViSH"
-      #ViSH LOM extension
-      case context
-      when "unspecified"
-        return "Unspecified"
-      when "preschool"
-        return "Preschool Education"
-      when "pEducation"
-        return "Primary Education"
-      when "sEducation"
-        return "Secondary Education"
-      when "higher education"
-        return "Higher Education"
-      when "training"
-        return "Professional Training"
-      when "other"
-        return "Other"
-      else
-        return context
-      end
-    else
-      #Strict LOM mode. Extensions are not allowed
-      case context
-      when "unspecified"
-        return nil
-      when "preschool"
-      when "pEducation"
-      when "sEducation"
-        return "school"
-      when "higher education"
-        return "higher education"
-      when "training"
-        return "training"
-      else
-        return "other"
-      end
-    end
-  end
-
-  def self.getLearningResourceType(lreType, _LOMschema)
-    case _LOMschema
-    when "ODS"
-      #ODS LOM Extension
-      #According to ODS, the Learning REsources type has to be one of this:
-      allowedLREtypes = ["application","assessment","blog","broadcast","case study","courses","demonstration","drill and practice","educational game","educational scenario","learning scenario","pedagogical scenario","enquiry-oriented activity","exercise","experiment","glossaries","guide","learning pathways","lecture","lesson plan","open activity","other","presentation","project","reference","role play","simulation","social media","textbook","tool","website","wiki","audio","data","image","text","video"]
-    else
-      allowedLREtypes = ["exercise","simulation","questionnaire","diagram","figure","graph","index","slide","table","narrative text","exam","experiment","problem statement","self assessment","lecture"]
-    end
-
-    if allowedLREtypes.include? lreType
-      return lreType
-    else
-      return nil
-    end
-  end
-
-  def self.generateVCard(fullName)
-    return "BEGIN:VCARD&#xD;VERSION:3.0&#xD;N:"+fullName+"&#xD;FN:"+fullName+"&#xD;END:VCARD"
-  end
-
 
   ####################
   ## IMS QTI 2.1 Management (Handled by the IMSQTI module imsqti.rb)
   ####################
 
-  def self.createQTI(filePath,fileName,qjson)
+  def self.createQTI(folderPath,fileName,qjson)
     require 'imsqti'
-    IMSQTI.createQTI(filePath,fileName,qjson)
+    IMSQTI.createQTI(folderPath,fileName,qjson)
   end
 
 
@@ -728,9 +792,9 @@ class Excursion < ActiveRecord::Base
   ## Moodle Quiz XML Management (Handled by the MOODLEXML module moodlexml.rb)
   ####################
 
-  def  self.createMoodleQUIZXML(filePath,fileName,qjson)
+  def  self.createMoodleQUIZXML(folderPath,fileName,qjson)
     require 'moodlexml'
-    MOODLEQUIZXML.createMoodleQUIZXML(filePath,fileName,qjson)
+    MOODLEQUIZXML.createMoodleQUIZXML(folderPath,fileName,qjson)
   end
 
 
@@ -952,7 +1016,6 @@ class Excursion < ActiveRecord::Base
   #################### 
 
   def afterPublish
-    
     #Check if post_activity is public. If not, make it public and update the created_at param.
     post_activity = self.post_activity
     unless post_activity.nil? or post_activity.public?
@@ -968,9 +1031,14 @@ class Excursion < ActiveRecord::Base
       self.inferLanguage
     end
 
+    if self.notified_teacher == true
+      self.notified_teacher = false
+      self.save
+    end
+
     #If LOEP is enabled, upload the excursion to LOEP
     unless Vish::Application.config.APP_CONFIG['loep'].nil?
-      VishLoep.registerActivityObject(self.activity_object) rescue nil
+      VishLoep.sendActivityObject(self.activity_object) rescue nil
     end
   end
 
@@ -1017,6 +1085,9 @@ class Excursion < ActiveRecord::Base
 
   def clone_for sbj
     return nil if sbj.blank?
+    unless self.clonable? or sbj.admin? or (sbj===self.owner)
+      return nil
+    end
 
     contributors = self.contributors || []
     contributors.push(self.author)
@@ -1033,6 +1104,8 @@ class Excursion < ActiveRecord::Base
     unless contributors.blank?
       eJson["contributors"] = contributors.map{|c| {name: c.name, vishMetadata:{ id: c.id}}}
     end
+    eJson.delete("license")
+    eJson["vishMetadata"] = {draft: "true"}
     e.json = eJson.to_json
 
     e.contributors=contributors
@@ -1043,7 +1116,7 @@ class Excursion < ActiveRecord::Base
 
   #method used to return json objects to the recommendation in the last slide
   def reduced_json(controller)
-      rjson = { 
+      rjson = {
         :id => id,
         :url => controller.excursion_url(:id => self.id),
         :title => title,
@@ -1058,9 +1131,7 @@ class Excursion < ActiveRecord::Base
       unless self.score_tracking.nil?
         rjson[:recommender_data] = self.score_tracking
         rsEngineCode = TrackingSystemEntry.getRSCode(JSON(rjson[:recommender_data])["rec"])
-        unless rsEngineCode.nil?
-          rjson[:url] = controller.excursion_url(:id => self.id, :rec => rsEngineCode)
-        end
+        rjson[:url] = controller.excursion_url(:id => self.id, :rec => rsEngineCode) unless rsEngineCode.nil?
       end
 
       rjson
@@ -1070,7 +1141,10 @@ class Excursion < ActiveRecord::Base
     self.activity_object.increment_download_count
   end
 
-
+  def get_attachment_name
+    name = "excursion_" + self.id.to_s + "_attachment" + File.extname(self.attachment_file_name)
+    name
+  end
 
   ####################
   ## Quality Metrics
@@ -1080,13 +1154,32 @@ class Excursion < ActiveRecord::Base
   #Method calculate_qscore
 
 
+
   private
+
+  def fill_license
+    #Set public license when publishing a excursion
+    if ((self.scope_was!=0 or self.new_record?) and (self.scope==0))
+      if self.license.nil? or self.license.private?
+        license_metadata = JSON(self.json)["license"] rescue nil
+        if license_metadata.is_a? Hash and license_metadata["key"].is_a? String
+          license = License.find_by_key(license_metadata["key"])
+          unless license.nil?
+            self.license_id = license.id
+          end
+        end
+        if self.license.nil? or self.license.private?
+          self.license_id = License.default.id
+        end
+      end
+    end
+  end
 
   def parse_for_meta
     parsed_json = JSON(json)
 
-    activity_object.title = parsed_json["title"] ? parsed_json["title"] : "Title"
-    activity_object.description = parsed_json["description"] 
+    activity_object.title = parsed_json["title"] ? parsed_json["title"] : "Untitled"
+    activity_object.description = parsed_json["description"]
     activity_object.tag_list = parsed_json["tags"]
     activity_object.language = parsed_json["language"]
 
@@ -1105,6 +1198,11 @@ class Excursion < ActiveRecord::Base
       activity_object.scope = 0 #public
     end
     
+    #Permissions
+    activity_object.allow_download = !(parsed_json["allow_download"] == "false")
+    activity_object.allow_comment = !(parsed_json["allow_comment"] == "false")
+    activity_object.allow_clone = !(parsed_json["allow_clone"] == "false")
+
     original_updated_at = self.updated_at
     activity_object.save!
 
@@ -1118,8 +1216,11 @@ class Excursion < ActiveRecord::Base
     end
     parsed_json["vishMetadata"]["id"] = self.id.to_s
     parsed_json["vishMetadata"]["draft"] = self.draft.to_s
-
-    parsed_json["author"] = {name: author.name, vishMetadata:{ id: author.id}}
+    unless self.draft
+      parsed_json["vishMetadata"]["released"] = "true"
+    end
+    
+    parsed_json["author"] = {name: author.name, vishMetadata:{ id: author.id }}
 
     self.update_column :json, parsed_json.to_json
     self.update_column :slide_count, parsed_json["slides"].size
@@ -1139,6 +1240,14 @@ class Excursion < ActiveRecord::Base
       a.activity_objects << self.activity_object
 
       a.save!
+    end
+  end
+
+  def send_to_loep
+    #If LOEP is enabled, send the excursion to LOEP.
+    #It will be created or updated
+    if self.public_scope? and !Vish::Application.config.APP_CONFIG['loep'].nil?
+      VishLoep.sendActivityObject(self.activity_object) rescue nil
     end
   end
   

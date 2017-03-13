@@ -2,13 +2,15 @@ class ExcursionsController < ApplicationController
 
   require 'fileutils'
 
-  before_filter :authenticate_user!, :only => [ :new, :create, :edit, :update, :clone, :uploadTmpJSON ]
+  before_filter :authenticate_user!, :only => [ :new, :create, :edit, :update, :clone, :uploadTmpJSON, :upload_attachment ]
   before_filter :profile_subject!, :only => :index
   before_filter :fill_create_params, :only => [ :new, :create]
-  skip_load_and_authorize_resource :only => [ :excursion_thumbnails, :metadata, :scormMetadata, :iframe_api, :preview, :clone, :manifest, :evaluate, :last_slide, :downloadTmpJSON, :uploadTmpJSON, :interactions]
+  skip_load_and_authorize_resource :only => [ :excursion_thumbnails, :metadata, :scormMetadata, :iframe_api, :preview, :clone, :manifest, :evaluate, :last_slide, :downloadTmpJSON, :uploadTmpJSON, :interactions, :upload_attachment, :show_attachment]
+  skip_before_filter :store_location, :only => [ :show_attachment ]
   skip_before_filter :store_location, :if => :format_full?
   skip_after_filter :discard_flash, :only => [:clone]
-  
+  after_filter :notify_teacher, :only => [:create, :update]
+
   # Enable CORS
   before_filter :cors_preflight_check, :only => [:excursion_thumbnails,:last_slide,:iframe_api]
   after_filter :cors_set_access_control_headers, :only => [:excursion_thumbnails,:last_slide,:iframe_api]
@@ -21,6 +23,7 @@ class ExcursionsController < ApplicationController
   #############
 
   def index
+    redirect_to home_path
   end
 
   def show 
@@ -33,12 +36,8 @@ class ExcursionsController < ApplicationController
             redirect_to "/"
           end
         else
-          tr = TrackingSystemEntry.trackRLOsInExcursions(params["rec"],@excursion,request,current_subject)
-          @tracking_system_entry_id = tr.id unless tr.nil?
-          
-          rsEngine = TrackingSystemEntry.getRandomRSEngine
-          @rec = TrackingSystemEntry.getRSCode(rsEngine)
-          @resource_suggestions = RecommenderSystem.resource_suggestions(current_subject,@excursion,{:n=>16, :models => [Excursion], :recEngine => rsEngine, :track => true, :request => request})
+          @resource_suggestions = RecommenderSystem.resource_suggestions({:user => current_subject, :lo => @excursion, :n=>10, :models => [Excursion]})
+          ActorHistorial.saveAO(current_subject,@excursion)
           render
         end
       }
@@ -46,6 +45,12 @@ class ExcursionsController < ApplicationController
         @orgUrl = params[:orgUrl]
         @title = @excursion.title
         render :layout => 'veditor'
+      }
+      format.fs {
+        @excursion.activity_object.increment!(:visit_count) if @excursion.public_scope?
+        @orgUrl = params[:orgUrl]
+        @title = @excursion.title
+        render "show.full", :layout => 'veditor'
       }
       format.json {
         render :json => resource 
@@ -56,13 +61,18 @@ class ExcursionsController < ApplicationController
         render :layout => 'veditor.full'
       }
       format.scorm {
-        @excursion.to_scorm(self)
-        @excursion.increment_download_count
-        send_file "#{Rails.root}/public/scorm/excursions/#{@excursion.id}.zip", :type => 'application/zip', :disposition => 'attachment', :filename => "scorm-#{@excursion.id}.zip"
+        if (can? :download_source, @excursion)
+          scormVersion = (params["version"].present? and ["12","2004"].include?(params["version"])) ? params["version"] : "2004"
+          @excursion.to_scorm(self,scormVersion)
+          @excursion.increment_download_count
+          send_file @excursion.scormFilePath(scormVersion), :type => 'application/zip', :disposition => 'attachment', :filename => ("scorm" + scormVersion + "-#{@excursion.id}.zip")
+        else
+          render :nothing => true, :status => 500
+        end
       }
       format.pdf {
         @excursion.to_pdf
-        if File.exist?("#{Rails.root}/public/pdf/excursions/#{@excursion.id}/#{@excursion.id}.pdf")
+        if @excursion.downloadable? and File.exist?("#{Rails.root}/public/pdf/excursions/#{@excursion.id}/#{@excursion.id}.pdf")
           send_file "#{Rails.root}/public/pdf/excursions/#{@excursion.id}/#{@excursion.id}.pdf", :type => 'application/pdf', :disposition => 'attachment', :filename => "#{@excursion.id}.pdf"
         else
           render :nothing => true, :status => 500
@@ -100,9 +110,10 @@ class ExcursionsController < ApplicationController
       @excursion.afterPublish
     end
 
-    render :json => { :url => (@excursion.draft ? user_path(current_subject) : excursion_path(resource, :recent => :true)),
+    render :json => { :url => (@excursion.draft ? user_path(current_subject) : excursion_path(resource)),
                       :uploadPath => excursion_path(@excursion, :format=> "json"),
-                      :editPath => edit_excursion_path(@excursion)
+                      :editPath => edit_excursion_path(@excursion),
+                      :id => @excursion.id
                     }
   end
 
@@ -127,14 +138,10 @@ class ExcursionsController < ApplicationController
     isAdmin = current_subject.admin?
 
     begin
-      if isAdmin
-        Excursion.record_timestamps=false
-      end
+      Excursion.record_timestamps=false if isAdmin
       @excursion.update_attributes!(params[:excursion])
     ensure
-      if isAdmin
-        Excursion.record_timestamps=true
-      end
+      Excursion.record_timestamps=true if isAdmin
     end
    
     published = (wasDraft===true and @excursion.draft===false)
@@ -142,10 +149,11 @@ class ExcursionsController < ApplicationController
       @excursion.afterPublish
     end
 
-    render :json => { :url => (@excursion.draft ? user_path(current_subject) : excursion_path(resource, :recent => :true)),
+    render :json => { :url => (@excursion.draft ? user_path(current_subject) : excursion_path(resource)),
                       :uploadPath => excursion_path(@excursion, :format=> "json"),
                       :editPath => edit_excursion_path(@excursion),
-                      :exitPath => (@excursion.draft ? user_path(current_subject) : excursion_path(resource))
+                      :exitPath => (@excursion.draft ? user_path(current_subject) : excursion_path(resource)),
+                      :id => @excursion.id
                     }
   end
 
@@ -172,25 +180,27 @@ class ExcursionsController < ApplicationController
       format.any {
         unless excursion.nil?
           xmlMetadata = Excursion.generate_LOM_metadata(JSON(excursion.json),excursion,{:id => Rails.application.routes.url_helpers.excursion_url(:id => excursion.id), :LOMschema => params[:LOMschema] || "custom"})
+          render :xml => xmlMetadata.target!, :content_type => "text/xml"
         else
           xmlMetadata = ::Builder::XmlMarkup.new(:indent => 2)
           xmlMetadata.instruct! :xml, :version => "1.0", :encoding => "UTF-8"
           xmlMetadata.error("Excursion not found")
+          render :xml => xmlMetadata.target!, :content_type => "text/xml", :status => 404
         end
-        render :xml => xmlMetadata.target!, :content_type => "text/xml"
       }
     end
   end
 
   def scormMetadata
     excursion = Excursion.find_by_id(params[:id])
+    scormVersion = ((params["version"].present? and ["12","2004"].include?(params["version"])) ? params["version"] : "2004")
     respond_to do |format|
       format.xml {
-        xmlMetadata = Excursion.generate_scorm_manifest(JSON(excursion.json),excursion,{:LOMschema => params[:LOMschema]})
+        xmlMetadata = Excursion.generate_scorm_manifest(scormVersion,JSON(excursion.json),excursion,{:LOMschema => params[:LOMschema]})
         render :xml => xmlMetadata.target!
       }
       format.any {
-        redirect_to excursion_path(excursion)+"/scormMetadata.xml"
+        redirect_to (excursion_path(excursion)+"/scormMetadata.xml?version=" + scormVersion)
       }
     end
   end
@@ -263,6 +273,37 @@ class ExcursionsController < ApplicationController
     end
   end
 
+  def upload_attachment
+    excursion = Excursion.find_by_id(params["pres_id"])
+    unless excursion.nil? || params[:attachment].blank?
+      authorize! :update, excursion
+      excursion.update_attributes(:attachment => params[:attachment])
+      if excursion.save
+        respond_to do |format|
+          format.json  { render :json => { :status => "ok", :message => "success"} }
+        end
+      else
+        respond_to do |format|
+          format.json  { render :json => { :status => "bad_request", :message => "bad_size"} }
+        end
+      end
+    else
+      respond_to do |format|
+        format.json  { render :json => { :status => "bad_request", :message => "wrong_params"} }
+      end
+    end
+  end
+
+  def show_attachment
+    excursion_id = params[:id]
+    excursion = Excursion.find(excursion_id)
+
+    unless excursion.blank? || excursion.attachment.blank?
+      attachment = File.open(excursion.attachment.path)
+      attachment_name = rename_attachment(attachment, excursion_id)
+      send_file attachment, :filename => attachment_name
+    end
+  end
 
   ##################
   # Evaluation Methods
@@ -270,7 +311,7 @@ class ExcursionsController < ApplicationController
   
   def evaluate
     @excursion = Excursion.find(params["id"])
-    @evmethod = params["evmethod"] || "wbltses"
+    @evmethod = params["evmethod"] || "wblts"
     
     respond_to do |format|
       format.html {
@@ -286,36 +327,11 @@ class ExcursionsController < ApplicationController
   
   def last_slide
     #Prepare parameters to call the RecommenderSystem
+    current_excursion =  Excursion.find_by_id(params[:excursion_id]) if params[:excursion_id]
+    options = {:user => current_subject, :lo => current_excursion, :n => (params[:quantity] || 6).to_i, :models => [Excursion]}
+    options[:keywords] = params[:q].split(",") if params[:q]
 
-    if params[:excursion_id]
-      current_excursion =  Excursion.find_by_id(params[:excursion_id])
-    else
-      current_excursion = nil
-    end
-
-    options = {:n => (params[:quantity] || 6).to_i, :models => [Excursion]}
-    if params[:q]
-      options[:keywords] = params[:q].split(",")
-    end
-
-    # Uncomment this block to activate the A/B testing
-    # A/B Testing: some % of the requests will be attended by the full RS, the other % will be attended by other algorithms
-    rnd = rand
-    if rnd < 0.10
-      #Random
-      options[:recEngine] = "Random"
-    elsif rnd < 0.5
-      #Full RS without quality metrics
-      options[:recEngine] = "ViSHRS-Quality"
-    elsif rnd < 0.9
-      #Full RS without quality and popularity metrics
-      options[:recEngine] = "ViSHRS-Quality-Popularity"
-    else
-      #Full RS
-      options[:recEngine] = "ViSHRecommenderSystem"
-    end
-
-    excursions = RecommenderSystem.resource_suggestions(current_subject,current_excursion,options)
+    excursions = RecommenderSystem.resource_suggestions(options)
 
     respond_to do |format|
       format.json {
@@ -343,13 +359,13 @@ class ExcursionsController < ApplicationController
 
         responseFormat = "json" #Default
         if params["responseFormat"].is_a? String
-          if params["responseFormat"].downcase == "scorm"
+          responseFormatParsedParam = params["responseFormat"].downcase
+          if responseFormatParsedParam.include?("scorm")
             responseFormat = "scorm"
-          end
-          if params["responseFormat"].downcase == "qti"
+            scormVersion = responseFormatParsedParam.sub("scorm","")
+          elsif responseFormatParsedParam == "qti"
             responseFormat = "qti"
-          end
-          if params["responseFormat"].downcase == "moodlexml"
+          elsif responseFormatParsedParam == "moodlexml"
             responseFormat = "MoodleXML"
           end
         end
@@ -365,11 +381,11 @@ class ExcursionsController < ApplicationController
           t.write json
           t.close
           results["url"] = "#{Vish::Application.config.full_domain}/excursions/tmpJson.json?fileId=#{count.to_s}"
-        elsif responseFormat == "scorm"
+        elsif responseFormat == "scorm" and ["12","2004"].include?(scormVersion)
           #Generate SCORM package
           filePath = "#{Rails.root}/public/tmp/scorm/"
-          fileName = "scorm-tmp-#{count.to_s}"
-          Excursion.createSCORM(filePath,fileName,JSON(json),nil,self)
+          fileName = "scorm" + scormVersion + "-tmp-#{count.to_s}"
+          Excursion.createSCORM(scormVersion,filePath,fileName,JSON(json),nil,self)
           results["url"] = "#{Vish::Application.config.full_domain}/tmp/scorm/#{fileName}.zip"
         elsif responseFormat == "qti"
            #Generate QTI package
@@ -379,12 +395,17 @@ class ExcursionsController < ApplicationController
            Excursion.createQTI(filePath,fileName,JSON(json))
            results["url"] = "#{Vish::Application.config.full_domain}/tmp/qti/#{fileName}.zip"
         elsif responseFormat == "MoodleXML"
+            #Generate Moodle XML package
            filePath = "#{Rails.root}/public/tmp/moodlequizxml/"
            FileUtils.mkdir_p filePath
            fileName = "moodlequizxml-tmp-#{count.to_s}"
            Excursion.createMoodleQUIZXML(filePath,fileName,JSON(json))
-           results["url"] = "#{Vish::Application.config.full_domain}/tmp/moodlequizxml/#{fileName}.zip"
+           results["url"] = "#{Vish::Application.config.full_domain}/tmp/moodlequizxml/#{fileName}.xml"
+           results["xml"] = File.open("#{filePath}#{fileName}.xml").read
+           results["filename"] = "#{fileName}.xml"
         end
+
+        results["url"] = Embed.checkUrlProtocol(results["url"],request.protocol) unless results["url"].blank?
 
         render :json => results
       }
@@ -392,7 +413,7 @@ class ExcursionsController < ApplicationController
   end
 
   def downloadTmpJSON
-    respond_to do |format|  
+    respond_to do |format|
       format.json {
         if params["fileId"] == nil
           results = Hash.new
@@ -418,7 +439,6 @@ class ExcursionsController < ApplicationController
     end
   end
 
-
   private
 
   def allowed_params
@@ -440,4 +460,20 @@ class ExcursionsController < ApplicationController
       params["excursion"]["user_author_id"] = current_subject.actor_id
     end
   end
+
+  def rename_attachment(name,id)
+      file_ext= File.extname(name)
+      file_new_name = "excursion_"+ id +"_attachment" + file_ext
+      file_new_name
+  end
+
+  def notify_teacher
+      pupil = @excursion.author.user
+      unless pupil.user.private_student_group_id.nil? || pupil.private_student_group.teacher_notification != "ALL"
+        teacher = Actor.find(pupil.user.private_student_group.owner_id).user
+        excursion_path = excursion_path(@excursion) #TODO get full path
+        TeacherNotificationMailer.notify_teacher(teacher, pupil, excursion_path)
+      end
+  end
+
 end

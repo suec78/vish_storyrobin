@@ -1,7 +1,8 @@
-SocialStream::Documents.setup do |config| 
-  
+SocialStream::Documents.setup do |config|
+
   #Configure picture thumbnails
   config.picture_styles = {
+    :"1200x100#" => ["1200x100#"],
     :"170x127#" => ["170x127#"],
     :"80x113#" => ["80x113#"], # this one preserves A4 proportion: 210x297
     :"500" => ["500>"]
@@ -9,13 +10,13 @@ SocialStream::Documents.setup do |config|
 
   config.audio_styles = {}
   config.audio_processors = []
-  
+
   if VishConfig.getAvailableServices.include? "MediaConversion"
     #Configure audio thumbnails
     config.audio_processors = [:ffmpeg]
     config.audio_styles[:webma] = {format: 'webm', processors: [:ffmpeg] }
     config.audio_styles[:mp3] = {format: 'mp3', processors: [:ffmpeg] }
-    config.audio_styles[:wav] = {format: 'wav', processors: [:ffmpeg] }   
+    config.audio_styles[:wav] = {format: 'wav', processors: [:ffmpeg] }
 
   end
 
@@ -26,9 +27,9 @@ SocialStream::Documents.setup do |config|
   if VishConfig.getAvailableServices.include? "MediaConversion"
       config.video_processors = [:ffmpeg, :qtfaststart]
       config.video_styles[:"170x127#"] = {  :geometry => "170x127#", :format => 'png', :time => 4 }
-      config.video_styles[:webm] = {  :format => 'webm' }
+      #config.video_styles[:webm] = {  :format => 'webm' }
       config.video_styles[:flv] = {  :format => 'flv', :convert_options => { :output => {:ar =>'22050'}}}
-      config.video_styles[:mp4] = {  :format => 'mp4', :convert_options => { :output => {:vcodec =>'libx264', :acodec =>"aac", :strict => "-2"}}, :streaming => true }   
+      config.video_styles[:mp4] = {  :format => 'mp4', :convert_options => { :output => {:vcodec =>'libx264', :acodec =>"aac", :strict => "-2"}}, :streaming => true }
   end
 
 
@@ -40,7 +41,8 @@ SocialStream::Documents.setup do |config|
     ],
     subtypes: [
       #:pdf, :odt, :odp, :doc, :ppt, :xls, :docx, :pptx, :xslx, :rar,
-      :pdf, :zipfile, :swf
+      :pdf, :zip, :swf, :doc, :odt, :ods, :ppt, :odp
+  
     ]
   }
 

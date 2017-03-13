@@ -41,8 +41,12 @@ public/images/tmp
 public/system
 public/assets
 
+#ims cp zile
+public/imscp/packages/*
+
 # scorm zip files
-public/scorm/excursions/*
+public/scorm/12/excursions/*
+public/scorm/2004/excursions/*
 public/scorm/packages/*
 
 #web apps
@@ -53,6 +57,9 @@ public/tmp/json/*
 public/tmp/scorm/*
 public/tmp/qti/*
 public/tmp/moodlequizxml/*
+
+#sitemap
+public/sitemap/*
 
 dumps/*
 

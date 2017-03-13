@@ -1,54 +1,64 @@
 <% return if resource.nil? or resource.author.nil? %>
 
-<li class="box-item resource-item" <%if defined?(obj_id)%>edit-id="<%=obj_id%>"<%end%>>
+<li class="resource box-item" <%if defined?(obj_id)%>edit-id="<%=obj_id%>"<%end%>>
+  
   <!-- corner -->
   <%= link_to(resource) do %>
     <div class="corner-item">
       <div class="corner-item2">
         <div class="corner-color"></div>
-        <%= link_to raw(icon(resource)), resource, :title => resource.title %>
+        <%#= link_to raw(icon(resource,false)), resource, :title => resource.title %>
+        <%= raw(icon(resource,false)) %>
       </div>
       <div class="corner-background"></div>
     </div>
     <!-- image/icon -->
     <div class="container-img">
-      <div class="img-box resource-center">        
-
-        <%= link_to raw(icon(resource)), resource, :title => resource.title %>
-
+      <div class="img-box resource-center">
+        <%#= link_to raw(icon(resource)), resource, :title => resource.title %>
+        <%= raw(icon(resource)) %>
       </div>
-    </div> 
-  
-  <%end%>
-  <!-- INFO -->
-  <div class="info">
-    <!-- Title -->
-    <div class="name">
-      <%= link_to resource.title, resource %>
     </div>
+  <%end%>
+
+  <!-- INFO -->
+  <div class="caption">
+
+    <!-- Title -->
+    <h6>
+      <%= link_to resource.title, resource %>
+    </h6>
+
     <!-- Author -->
-    <span class="author"> 
+    <span class="author">
       <span class="by"><%=t('by')%></span>
       <%= link_to truncate_name(resource.author.name, length: 25), resource.author.subject %>
     </span>
+
+    <hr>
+
     <div class="info-bottom">
-      <hr class="soften">
+
       <!--like -->
-      <div class="like">    
+      <div class="like">
         <div class="count"><%=resource.post_activity.likes.count.to_s%></div>
-        <%= link_like(resource.post_activity)%>
+        <%= link_like(resource.post_activity, {:title =>t('excursion.actions.favorite')})%>
       </div>
+
       <!--views -->
       <div class="views">
         <%if resource.private_scope? %>
           <div class="private-resource-mark">
-            <i class="icon-lock"></i>
+            <i class="fa fa-lock"></i>
           </div>
         <%else%>
           <%=resource.visit_count.to_s%>
-          <i class="icon-eye-open"></i>
+          <i class="fa fa-eye"></i>
         <%end%>
       </div>
+
     </div>
+
   </div>
+
 </li>

@@ -1,32 +1,26 @@
-<%resource = contribution.activity_object.object%>
+<% resource = contribution.activity_object.object rescue nil %>
 <% return if resource.nil? or resource.author.nil? %>
 
-<li class="box-item resource-item">
-  
-  <% unless resource.class.name == "Excursion"%>
-    <!-- corner -->
-    <div class="corner-item">
-      <div class="corner-item2">
-        <div class="corner-color"></div>
-        <%= link_to raw(icon(resource)), contribution, :title => resource.title %>
-      </div>
-      <div class="corner-background"></div>
+<li class="box-item resource">
+  <!-- corner -->
+  <div class="corner-item">
+    <div class="corner-item2">
+      <div class="corner-color"></div>
+      <%= link_to raw(icon(resource,false)), contribution, :title => resource.title %>
     </div>
-  <% end %>
-
+    <div class="corner-background"></div>
+  </div>
   <!-- image/icon -->
   <div class="container-img">
     <div class="img-box resource-center">        
       <%= link_to raw(icon(resource)), contribution, :title => resource.title %>
     </div>
-  </div>
+  </div> 
 
   <!-- INFO -->
-  <div class="info">
+  <div class="caption">
     <!-- Title -->
-    <div class="name">
-      <%= link_to resource.title, contribution %>
-    </div>
+    <h6><%= link_to resource.title, contribution %></h6>
     <!-- Author -->
     <span class="author"> 
       <span class="by"><%=t('by')%></span>
@@ -40,8 +34,7 @@
         <%= link_like(resource.post_activity)%>
       </div>
       <!--views (contributions may have private scope, so they do not include views at this time) -->
-      <div class="views">
-      </div>
+      <div class="views"></div>
     </div>
   </div>
 </li>

@@ -18,8 +18,21 @@ module Vish
     
     config.name = (config.APP_CONFIG['name'].nil? ? "ViSH" : config.APP_CONFIG['name'])
 
+    config.domain = config.APP_CONFIG['domain']
     config.full_domain = "http://" + config.APP_CONFIG['domain']
     config.full_code_domain = "http://" + (config.APP_CONFIG['code_domain'] || config.APP_CONFIG['domain'])
+
+    # Login and register policies
+    #Default values
+    config.register_policy = "HYBRID"
+    config.login_policy = "LOCAL"
+    #Custom values
+    config.register_policy = config.APP_CONFIG["register_policy"] if ["REGISTER_ONLY","INVITATION_ONLY","HYBRID"].include? config.APP_CONFIG["register_policy"]
+    config.login_policy = config.APP_CONFIG["login_policy"] if ["LOCAL","CAS"].include? config.APP_CONFIG["login_policy"]
+    #Features related to login and register policies
+    config.cas = config.login_policy==="CAS" and !config.APP_CONFIG["CAS"].blank?
+    config.registrations = ["REGISTER_ONLY","HYBRID"].include? config.register_policy
+    config.invitations = ["INVITATION_ONLY","HYBRID"].include? config.register_policy
 
     # Custom directories with classes and modules you want to be autoloadable.
     # config.autoload_paths += %W(#{config.root}/extras)
@@ -88,48 +101,54 @@ module Vish
       require 'vish_editor'
     end
 
+    #Require core extensions
+    Dir[File.join(Rails.root, "lib", "core_ext", "*.rb")].each {|l| require l }
+
+    config.after_initialize do
+      #Agnostic random
+      if ActiveRecord::Base.connection.adapter_name == "PostgreSQL"
+        config.agnostic_random = "RANDOM()"
+      else
+        #MySQL
+        config.agnostic_random = "RAND()"
+      end
+    end
+
+    #Tracker
+    config.trackingSystem = (!config.APP_CONFIG['trackingSystemAPIKEY'].nil? and !config.APP_CONFIG['trackingSystemAPIURL'].nil?)
+
     #External services settings
     config.uservoice = (!config.APP_CONFIG['uservoice'].nil? and !config.APP_CONFIG['uservoice']["scriptURL"].nil?)
     config.ganalytics = (!config.APP_CONFIG['ganalytics'].nil? and !config.APP_CONFIG['ganalytics']["trackingID"].nil?)
-    config.facebook = (!config.APP_CONFIG['facebook'].nil? and !config.APP_CONFIG['facebook']["appID"].nil?)
+    config.gwebmastertools = (!config.APP_CONFIG['gwebmastertools'].nil? and !config.APP_CONFIG['gwebmastertools']["site-verification"].nil?)
+    config.facebook = (!config.APP_CONFIG['facebook'].nil? and !config.APP_CONFIG['facebook']["appID"].nil? and !config.APP_CONFIG['facebook']["accountID"].nil?)
     config.twitter = (!config.APP_CONFIG['twitter'].nil? and config.APP_CONFIG['twitter']["enable"]===true)
     config.gplus = (!config.APP_CONFIG['gplus'].nil? and config.APP_CONFIG['gplus']["enable"]===true)
 
     #Tags settings
     if config.APP_CONFIG['tagsSettings'].blank?
-        config.tagsSettings = {}
+      config.tagsSettings = {}
     else
-        config.tagsSettings = config.APP_CONFIG['tagsSettings']
+      config.tagsSettings = config.APP_CONFIG['tagsSettings']
     end
 
     if config.tagsSettings["maxLength"].blank?
-        config.tagsSettings["maxLength"] = 20
+      config.tagsSettings["maxLength"] = 20
     end
 
     if config.tagsSettings["maxTags"].blank?
-        config.tagsSettings["maxTags"] = 8
+      config.tagsSettings["maxTags"] = 8
     end
 
     if config.tagsSettings["triggerKeys"].blank?
-        config.tagsSettings["triggerKeys"] = ['enter', 'comma', 'tab', 'space']
+      config.tagsSettings["triggerKeys"] = ['enter', 'comma', 'tab', 'space']
     end
 
-    #Catalogue
-    if config.APP_CONFIG['catalogue'].blank?
-        config.catalogue = {} 
-    else
-        config.catalogue = config.APP_CONFIG['catalogue']
-    end
+    #StopTags
+    config.stoptags = File.read("config/stoptags.yml").split(",").map{|s| s.gsub("\n","").gsub("\"","") } rescue []
 
-    #Catalogue: Mode
-    if config.catalogue['mode'].blank?
-        config.catalogue['mode'] = "matchany"
-    end
-
-    #Catalogue: Quality threshold
-    unless config.catalogue["qualityThreshold"].is_a? Numeric
-        config.catalogue["qualityThreshold"] = nil
-    end
-
+    #Search engine
+    config.max_matches = ThinkingSphinx::Configuration.instance.configuration.searchd.max_matches || 10000
   end
+
 end

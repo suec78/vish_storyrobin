@@ -23,7 +23,7 @@ class WaAssignmentsController < ApplicationController
     end
   end
 
-  def update
+   def update
     super do |format|
       format.html {
         if request.xhr?

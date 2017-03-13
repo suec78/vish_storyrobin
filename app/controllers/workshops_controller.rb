@@ -1,19 +1,19 @@
 class WorkshopsController < ApplicationController
 
-  before_filter :authenticate_user!, :only => [ :new, :create, :edit, :update, :contributions]
+  before_filter :authenticate_user!, :only => [ :new, :create, :edit, :update]
   before_filter :fill_create_params, :only => [:new, :create]
   before_filter :fill_draft, :only => [:create, :update]
   skip_load_and_authorize_resource :only => [ :edit_details, :contributions ]
   skip_after_filter :discard_flash, :only => [:edit]
-
   include SocialStream::Controllers::Objects
+  after_filter :notify_teacher, :only => [:create]
 
   #############
   # REST methods
   #############
 
   def index
-    super
+    redirect_to home_path
   end
 
   def show
@@ -22,7 +22,7 @@ class WorkshopsController < ApplicationController
         if @workshop.draft and (can? :edit, @workshop)
           redirect_to edit_workshop_path(@workshop)
         else
-          # @resource_suggestions = RecommenderSystem.resource_suggestions(current_subject,@excursion,{:n=>16, :models => [Workshop]})
+          # @resource_suggestions = RecommenderSystem.resource_suggestions({:user => current_subject, :lo => @workshop, :n=>16, :models => [Workshop]})
           @workshop_activities = @workshop.workshop_activities.sort_by{ |wa| wa.position }
           render
         end
@@ -83,11 +83,16 @@ class WorkshopsController < ApplicationController
       params.delete "workshop_activities_order"
     end
 
+    wasDraft = resource.draft
+
     super do |format|
       format.html {
         if resource.draft
           redirect_to edit_workshop_path(resource)
         else
+          if wasDraft
+            resource.afterPublish
+          end
           redirect_to workshop_path(resource)
         end
       }
@@ -122,7 +127,7 @@ class WorkshopsController < ApplicationController
   private
 
   def allowed_params
-    [:draft, :language, :age_min, :age_max, :scope, :avatar, :tag_list=>[]]
+    [:banner, :draft, :language, :license_id, :age_min, :age_max, :scope, :avatar, :tag_list=>[]]
   end
 
   def fill_create_params
@@ -157,6 +162,20 @@ class WorkshopsController < ApplicationController
 
   def verify_owner(workshop)
     return (can? :update, workshop)
+  end
+
+  def notify_teacher
+    if VishConfig.getAvailableServices.include? "PrivateStudentGroups"
+      author_id = resource.author.user.id
+      unless author_id.nil? 
+        pupil = resource.author.user
+        if !pupil.private_student_group_id.nil? && pupil.private_student_group.teacher_notification != "ALL" #REFACTOR: is_pupil?
+          teacher = Actor.find(pupil.private_student_group.owner_id).user
+          resource_path = document_path(resource) #TODO get full path
+          TeacherNotificationMailer.notify_teacher(teacher, pupil, resource_path)
+        end
+      end
+    end
   end
 
 end

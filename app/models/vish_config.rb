@@ -3,7 +3,7 @@
 class VishConfig
 
   def self.getMainModels
-    ["Excursion","Event","Category","Resource","Workshop"]
+    ["Excursion","Event","Category","Resource","Workshop","Course"]
   end
 
   def self.getFixedMainModels
@@ -11,15 +11,27 @@ class VishConfig
   end
 
   def self.getResourceModels
-    ["Document","Webapp","Scormfile","Link","Embed","Writing"] + getMainModelsWhichActAsResources
+    ["Document","Webapp","Scormfile","Imscpfile","Link","Embed","Writing"] + getMainModelsWhichActAsResources
   end
 
   def self.getMainModelsWhichActAsResources
     ["Excursion","Workshop"]
   end
 
+  def self.getAllLanguages
+    getAllDefinedLanguages + ["independent","other"]
+  end
+
+  def self.getAllDefinedLanguages
+    ["en", "de", "es", "fr", "it", "pt", "ru", "hu", "nl"]
+  end
+
   def self.getAllModels(options={})
     processAlias(getMainModels,options)
+  end
+
+  def self.getAllModelsInstances(options={})
+    getInstances(processAlias(getMainModels,options))
   end
 
   def self.getAllPossibleModelValues
@@ -27,11 +39,11 @@ class VishConfig
   end
 
   def self.getAllContributionTypes
-    ["Document","Resource","Writing"]
+    ["Document","Writing","Resource"]
   end
 
   def self.getAllServices
-    ["ARS","Catalogue","Competitions2013","ASearch","MediaConversion"]
+    ["ARS","Catalogue","Contests","ASearch","MediaConversion","PrivateStudentGroups"]
   end
 
   def self.getAvailableMainModels(options={})
@@ -51,9 +63,18 @@ class VishConfig
 
   def self.getSearchModels(options={})
     searchModels = getAvailableMainModels()
-    searchModels.delete("Category")
-    searchModels
+    #we do not want to search by courses 
+    searchModels.delete("Course")  
+    if !options.include?(:include_users) || options[:include_users]==true
+      searchModels = searchModels + getFixedMainModels
+    end
+    if options[:return_instances]
+      getInstances(processAlias(searchModels,options))
+    else
+      searchModels
+    end
   end
+
 
   def self.getAvailableMainModelsWhichActAsResources(options={})
     aMainModelsWhichActAsResources = getAvailableMainModels & getMainModelsWhichActAsResources
@@ -113,6 +134,23 @@ class VishConfig
       getInstances(directoryModels)
     else
       directoryModels
+    end
+  end
+
+  def self.getArchiveModels(options={})
+    archiveModels = []
+    if Vish::Application.config.APP_CONFIG["models"].nil? or Vish::Application.config.APP_CONFIG["models"]["archive"].nil?
+      archiveModels = getResourceModels
+    else
+      archiveModels = (Vish::Application.config.APP_CONFIG["models"]["archive"] & getResourceModels)
+    end
+
+    archiveModels = processAlias(archiveModels,options)
+
+    if options[:return_instances]
+      getInstances(archiveModels)
+    else
+      archiveModels
     end
   end
 
@@ -182,7 +220,8 @@ class VishConfig
     if options[:include_subtypes] and models.include? "Document"
       models += Document.subclasses.map{|s| s.name}
     end
-    models.uniq!
+    models.uniq!  
+    
     return models
   end
 

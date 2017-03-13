@@ -5,13 +5,13 @@ DocumentsController.class_eval do
   # Enable CORS
   before_filter :cors_preflight_check, :only => [:show]
   after_filter :cors_set_access_control_headers, :only => [:show]
+  after_filter :notify_teacher, :only => [:create, :update]
 
   def create
     super do |format|
-      
       #Check if the Zipfile contains a Web Application or a SCORM Package to create the new resource and redirect to it.
       if resource.is_a? Zipfile
-        newResource = resource.getResourceAfterSave(self)
+        newResource = resource.getResourceAfterSave
         if newResource.is_a? String
           #Raise error
           flash.now[:alert] = newResource
@@ -35,9 +35,7 @@ DocumentsController.class_eval do
         end
         render :json => jsonResult, status: :created
       }
-
       format.js
-
       format.all {
         if resource.new_record?
           render action: :new
@@ -77,7 +75,7 @@ DocumentsController.class_eval do
   private
 
   def allowed_params
-    [:file, :language, :age_min, :age_max, :scope, :avatar, :tag_list=>[]]
+    [:file, :language, :license_id, :original_author, :license_attribution, :license_custom, :age_min, :age_max, :scope, :avatar, :tag_list=>[]]
   end
 
   def fill_create_params
@@ -88,4 +86,18 @@ DocumentsController.class_eval do
     params["document"]["user_author_id"] = current_subject.actor_id
   end
 
+  def notify_teacher    
+    if VishConfig.getAvailableServices.include? "PrivateStudentGroups"
+      author_id = resource.author.user.id rescue nil
+      unless author_id.nil?
+        pupil = resource.author.user
+        if !pupil.private_student_group_id.nil? && pupil.private_student_group.teacher_notification == "ALL"
+          teacher = Actor.find(pupil.private_student_group.owner_id).user
+          resource_path = document_path(resource) #TODO get full path
+          TeacherNotificationMailer.notify_teacher(teacher, pupil, resource_path)
+        end
+      end
+    end
+  end
+  
 end

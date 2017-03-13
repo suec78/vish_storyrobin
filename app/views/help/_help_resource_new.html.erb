@@ -1,21 +1,26 @@
-<li class="helpheader helpbutton">   
-<i class="icon-question-sign helpResources helppopover" id="helpresourceid" data-placement='left' aria-hidden="true" data-original-title="<%= t('document.help.title')%>" data-footer="whatever" href='#' value="" ></i>
-<div class="contentHelpResources" id="contenthelpresourceid" style="display: none">
-  <div>
-        <%= t('document.help.info1_html')%>  <br/>
-        <%= t('document.help.info2_html')%>  <br/>
-        <%= t('document.help.info3_html')%>  <br/>
-        <%= t('document.help.info4_html')%>  <br/>
-        <%= t('document.help.info5_html')%>  <br/>
-        <%= t('document.help.info6_html')%>  <br/>
-        <%= t('document.help.info7_html')%>  <br/>
-        <%= t('document.help.info8_html')%>
+<span class="helpheader">
+  <i class="fa fa-question-circle" id="helpresourceid" data-toggle="popover" data-placement='left' aria-hidden="true" data-original-title="<%= t('document.help.title')%>" href='#' value="" ></i>
+
+  <div id="contenthelpresourceid" style="display: none">
+    <div class="popover-body">
+      <p>1. <%= t('document.help.info1_html')%></p>
+      <ul class='contenthelpresourceidul'>
+        <li><%= t('document.help.info1_doc_html')%></li>
+        <li><%= t('document.help.info1_link_html')%></li>
+        <li><%= t('document.help.info1_embed_html')%></li>
+      </ul>
+      <p>2. <%= t('document.help.info2AA_html')%><%= t('document.help.info2B_html')%> </p>
+      <p>3. <%= t('document.help.info3_html')%> </p>
+      <p>4. <%= t('document.help.info4_html')%> </p>
+      <p>5. <%= t('document.help.info5_html')%> </p>
+      <p>6. <%= t('document.help.info6A_html')%> </p>
+    </div>
+    <div class="popover-footer popoverfix"><%= t('document.help.overview_html')%></div>
   </div>
-  <div class="modal-footer popoverfix"><%= t('document.help.overview_html')%></div>
-</div>
-</li>
+</span>
+
 <%content_for :javascript do%>
-  $('#helpresourceid').popover({ 
+  $('#helpresourceid').popover({
     html : true,
     content: function() {
       return $('#contenthelpresourceid').html();

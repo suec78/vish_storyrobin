@@ -1,23 +1,6 @@
-# Copyright 2011-2012 Universidad Politécnica de Madrid and Agora Systems S.A.
-#
-# This file is part of ViSH (Virtual Science Hub).
-#
-# ViSH is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# ViSH is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with ViSH.  If not, see <http://www.gnu.org/licenses/>.
-
 class ContributionsController < ApplicationController
-  
-  before_filter :authenticate_user!
+
+  before_filter :authenticate_user!, :except => [:show]
   before_filter :fill_create_params, :only => [:create]
   inherit_resources
 
@@ -45,6 +28,9 @@ class ContributionsController < ApplicationController
           render "new"
         end
       }
+      format.partial {
+        render :new, :layout => false
+      }
     end
   end
 
@@ -52,79 +38,53 @@ class ContributionsController < ApplicationController
     if params["contribution"]["wa_assignment_id"].present?
       wassignment = WaAssignment.find_by_id(params["contribution"]["wa_assignment_id"])
       workshop = wassignment.workshop unless wassignment.nil?
-      if wassignment.nil? or workshop.nil?
-        flash[:errors] = "Invalid workshop or assignment"
-        return redirect_to "/"
-      end
+      return create_return_with_error("Invalid workshop or assignment","/") if wassignment.nil? or workshop.nil?
     else
       #Get resource from which the contribution is being created...
       parent = Contribution.find_by_id(params["contribution"]["parent_id"])
-      if parent.nil?
-        flash[:errors] = "Invalid parent"
-        return redirect_to "/"
-      end
+      return create_return_with_error("Invalid parent","/") if parent.nil?
     end
+    pathToReturn = (workshop.nil? ? polymorphic_path(parent) : workshop_path(workshop))
 
     case params["contribution"]["type"]
     when "Document"
-      unless params["document"].present?
-        flash[:errors] = "missing document"
-        return redirect_to (workshop.nil? ? polymorphic_path(parent) : workshop_path(workshop))
-      end
+      return create_return_with_error("missing document",pathToReturn) unless params["document"].present?
       object = Document.new((params["document"].merge!(params["contribution"]["activity_object"])).permit!)
     when "Writing"
-      unless params["writing"].present?
-        flash[:errors] = "missing params"
-        return redirect_to (workshop.nil? ? polymorphic_path(parent) : workshop_path(workshop))
-      end
+      return create_return_with_error("missing params",pathToReturn) unless params["writing"].present?
       object = Writing.new((params["writing"].merge!(params["contribution"]["activity_object"])).permit!)
     when "Resource"
-      unless params["url"].present?
-        flash[:errors] = "missing resource url"
-        return redirect_to (workshop.nil? ? polymorphic_path(parent) : workshop_path(workshop))
-      end
+      return create_return_with_error(I18n.t("contribution.messages.url_not_found"),pathToReturn) unless params["url"].present?
       object = ActivityObject.getObjectFromUrl(params["url"])
+      return create_return_with_error(I18n.t("contribution.messages.object_not_found"),pathToReturn) if object.nil?
     else
-      flash[:errors] = "Invalid contribution"
-      return redirect_to (workshop.nil? ? polymorphic_path(parent) : workshop_path(workshop))
-    end
-
-
-    object_errors = nil
-
-    if object.new_record?
-      authorize! :create, object
-      object.valid?
-      if !object.errors.blank? or !object.save
-        object_errors = object.errors.full_messages.to_sentence
-      end
-    else
-      authorize! :update, object
-      if object.nil? or object.activity_object.nil?
-        object_errors = "Invalid object"
-      end
-    end
-
-    if object_errors.nil?
-      ao = object.activity_object
-      discard_flash
-    else
-      flash[:errors] = object_errors
-      return redirect_to (workshop.nil? ? polymorphic_path(parent) : workshop_path(workshop))
+      return create_return_with_error("Invalid contribution type",pathToReturn)
     end
     
+    if object.new_record?
+      #We need to create and save the object
+      authorize! :create, object
+      object.valid?
+      return create_return_with_error(object.errors.full_messages.to_sentence,pathToReturn) unless object.errors.blank? and object.save
+      discard_flash
+    else
+      #Object already exists. Authorize user to submit that object.
+      return create_return_with_error(I18n.t("contribution.messages.object_not_yours"),pathToReturn) unless object.owner_id == current_subject.actor_id
+      authorize! :update, object
+    end
 
+    ao = object.activity_object
+    params["contribution"]["activity_object_id"] = ao.id
     params["contribution"].delete "activity_object"
     params["contribution"].delete "type"
-    params["contribution"]["activity_object_id"] = ao.id
-
     authorize! :create, Contribution.new(params["contribution"])
 
     super do |format|
-      format.html {
-        unless resource.errors.blank?
-          flash[:errors] = resource.errors.full_messages.to_sentence
-          return redirect_to (workshop.nil? ? polymorphic_path(parent) : workshop_path(workshop))
+      format.any {
+        return create_return_with_error(resource.errors.full_messages.to_sentence,pathToReturn) unless resource.errors.blank?
+        #Return with success
+        if request.xhr?
+          return render :json => {}, :status => 200
         else
           discard_flash
           return redirect_to contribution_path(resource)
@@ -132,7 +92,16 @@ class ContributionsController < ApplicationController
       }
     end
   end
- 
+
+  def create_return_with_error(error,pathToReturn)
+    if request.xhr?
+      return render :json => {errors: [error]}, :status => 400
+    else
+      flash[:errors] = error
+      return redirect_to pathToReturn
+    end
+  end
+
 
   private
 

@@ -12,34 +12,36 @@ class Zipfile < Document
   end
 
   def fileType
-    if self.file.class != Paperclip::Attachment or self.file.path.blank?
-      return Zipfile
-    end
+    return "Zipfile" if self.file.class != Paperclip::Attachment or self.file.path.blank?
 
-    isScorm = false
-    isWebapp = false
+    fileType = "Zipfile"
     Zip::File.open(self.file.path) do |zip|
-      isScorm = zip.entries.map{|e| e.name}.include? "imsmanifest.xml"
-      unless isScorm
-        isWebapp = zip.entries.map{|e| e.name}.include? "index.html"
+      manifest = zip.entries.select{|e| e.name == "imsmanifest.xml"}.first
+      if manifest
+        schema = Imscpfile.getSchemaFromXmlManifest(Nokogiri::XML(manifest.get_input_stream.read)) rescue "invalid schema"
+        case schema
+        when "IMS Content"
+          fileType = "Imscpfile"
+        when "ADL SCORM", nil
+          fileType = "Scormfile"
+        end
+      else
+        index = zip.entries.select{|e| e.name == "index.html"}.first
+        fileType = "Webapp" if index
       end
     end
-    
-    if isScorm
-      return Scormfile
-    elsif isWebapp
-      return Webapp
-    end
 
-    return Zipfile
+    return fileType
   end
 
-  def getResourceAfterSave(controller)
-    case self.fileType.name
-    when Scormfile.name
-      resource = Scormfile.createScormfileFromZip(controller,self)
-    when Webapp.name
-      resource = Webapp.createWebappFromZip(controller,self)
+  def getResourceAfterSave
+    case self.fileType
+    when "Scormfile"
+      resource = Scormfile.createScormfileFromZip(self)
+    when "Imscpfile"
+      resource = Imscpfile.createImscpfileFromZip(self)
+    when "Webapp"
+      resource = Webapp.createWebappFromZip(self)
     else
       resource = self
     end

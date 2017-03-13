@@ -1,0 +1,53 @@
+<div id="warning_cookie_bar" class="row">
+    <div class="col-md-2" id="ckH">USO  DE COOKIES</div>
+    <div class="col-md-8">Usamos cookies propias y de terceros para facilitar el uso de esta web y obtener estadísticas destinadas a la investigación.Si continua navegando consideramos que acepta el uso de cookies.</div>
+    <div class="col-md-2">
+        <div id="boxieOk">
+            <a id="cookie_close" href="javascript:void(0);" onclick="setCookieOn();">OK</a>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    function getCookie(c_name){
+        var c_value = document.cookie;
+        var c_start = c_value.indexOf(" " + c_name + "=");
+
+        if (c_start == -1){
+            c_start = c_value.indexOf(c_name + "=");
+        }
+
+        if (c_start == -1){
+            c_value = null;
+        } else {
+            c_start = c_value.indexOf("=", c_start) + 1;
+            var c_end = c_value.indexOf(";", c_start);
+            if(c_end == -1){
+                c_end = c_value.length;
+            }
+            c_value = unescape(c_value.substring(c_start,c_end));
+        }
+        return c_value;
+    }
+
+    function setCookie(c_name,value,exdays){
+        var exdate=new Date();
+        exdate.setDate(exdate.getDate() + exdays);
+        var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
+        document.cookie=c_name + "=" + c_value;
+    }
+
+    function setCookieOn(){
+        setCookie('cookie_warning','1',365*10);
+        $("#warning_cookie_bar").fadeOut();
+    }
+
+    document.addEventListener("DOMContentLoaded", function(){
+        try {
+            if(getCookie('cookie_warning') != "1"){
+                $("#warning_cookie_bar").fadeIn();
+            }
+        } catch(e){ }
+    });
+</script>

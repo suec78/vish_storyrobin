@@ -22,9 +22,12 @@ class AdminController < ApplicationController
 	end
 
 	def users
-		@users = User.all.sort{|b,a| a.created_at <=> b.created_at}
+		@users = User.registered.sort{|b,a| a.created_at <=> b.created_at}
 	end
 
+	def requests
+		@requests = ServiceRequest.all
+	end
 
 	private
 

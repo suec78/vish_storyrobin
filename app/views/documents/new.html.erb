@@ -1,0 +1,17 @@
+<% content_for :title do %>
+  <%= "#{ current_subject.name }: #{ t('document.new.title') }" %>
+<% end %>
+
+<section id="new_document">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <%= render partial: 'help/help_document_new' %>
+        <h4><%= t('document.main_title')%></h4>
+      </div>
+	    <div class="modal-body">
+	      <%= render partial: 'common_documents/form', locals: { document: @document } %>
+	    </div>
+	 </div>
+  </div>
+</section>

@@ -14,7 +14,7 @@ class HomeController < ApplicationController
                 render partial: "home"
               else
                 homeModels = VishConfig.getHomeModels({:return_instances => true})
-                resourcesPopular = RecommenderSystem.search({:n => 16, :order => "ranking DESC", :ao_ids_to_avoid => params[:ids_to_avoid].split(','), :page => params[:page], :models=> homeModels})
+                resourcesPopular = Search.search({:n => 16, :order => "ranking DESC", :ao_ids_to_avoid => params[:ids_to_avoid].split(','), :page => params[:page], :models=> homeModels})
                 render partial: "home_popular", :locals => {:resources => resourcesPopular, :ids_to_avoid => params[:ids_to_avoid].split(','), :prefix_id=>"home"}, :layout => false
               end
             elsif params[:tab]=="net"
@@ -27,9 +27,6 @@ class HomeController < ApplicationController
             end
         else
           #Non-Ajax call
-          if params[:tab]=="catalogue"
-            @default_categories = Catalogue.getDefaultCategories
-          end
           render "index"
         end
       }

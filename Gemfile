@@ -4,27 +4,27 @@ source 'http://rubygems.org'
 gem 'rails', :git => 'git://github.com/rails/rails.git', :branch => "3-2-stable"
 
 #Database Adapters
-# gem 'sqlite3', '= 1.3.9'
+gem 'sqlite3', '= 1.3.9'
 gem 'pg', '= 0.17.1'
-# gem 'mysql2', '= 0.3.16'
-gem 'mysql2'
+gem 'mysql2', '= 0.3.16'
 
 gem 'sass-rails', '= 3.2.6'
-gem 'bootstrap-sass', '= 2.3.2.2'
+gem 'bootstrap-sass', '= 3.1.1.0'
+
 gem 'coffee-rails', '= 3.2.2'
 gem 'uglifier', '= 1.2.3'
 gem 'jquery-rails', '= 3.1.0'
 gem 'jquery-ui-rails', '= 4.1.2'
-gem 'json', '= 1.8.1'
+gem 'json', '= 1.8.3'
 gem 'sinatra', '= 1.3.2'
 gem 'selenium-webdriver', '= 2.44.0'
-gem 'god', :git => 'git://github.com/mojombo/god.git', :ref => 'a0602dda2e767f2b711e37bf2d4199c0614af480'
-gem 'redis', '= 3.0.7'
-gem 'resque', '= 1.23.1'
-gem 'rmagick', '>=2.13.4'
+gem 'god', :git => 'git://github.com/mojombo/god.git', :ref => '92c06aa5f6293cf26498a306e9bb7ac856d7dca0'
+gem 'redis', '= 3.3.3'
+gem 'resque', '= 1.27.0'
+gem 'rmagick', '=2.13.2'
 gem 'thinking-sphinx', '= 2.0.14'
-gem 'exception_notification', '= 3.0.1'
-gem 'rspec-rails', '= 2.9.0'
+gem 'exception_notification', '= 4.1.1'
+gem 'rspec-rails', '= 2.9'
 gem 'net-ssh', '= 2.4.0'
 gem 'shortener', '= 0.3.0'
 gem 'rubyzip', '= 1.0.0'
@@ -34,8 +34,7 @@ gem 'pdf-reader', '= 1.3.3'
 gem 'avatars_for_rails', '= 1.1.4'
 gem 'axlsx', '= 2.0.1' #xlsx generation
 gem 'axlsx_rails', '= 0.1.5'
-# gem 'acts_as_xlsx', '= 1.0.6'
-gem 'acts_as_xlsx', :git => 'git@github.com:randym/acts_as_xlsx.git', :ref => '919817e590b1cf8e27632e630469603c78a50402'
+gem 'acts_as_xlsx', :git => 'git://github.com/randym/acts_as_xlsx.git', :ref => '919817e590b1cf8e27632e630469603c78a50402'
 gem "paperclip", '= 3.5.1'
 gem "delayed_paperclip", "= 2.7.0"
 gem 'sanitize', '= 2.1.0'
@@ -45,6 +44,9 @@ gem 'detect_language', '=1.0.5'
 gem 'faker', '= 1.4.3'
 gem 'acts-as-taggable-on', '= 2.4.1'
 gem 'test-unit', '= 3.0.9'
+gem 'sitemap_generator'
+gem 'descriptive_statistics', '~> 2.4.0', :require => 'descriptive_statistics/safe'
+gem 'jwt', '= 1.4.1'
 
 #Gems from Git repositories
 gem 'simple_captcha', :git => 'git://github.com/galetahub/simple-captcha.git', :ref => '2602bf1'
@@ -63,7 +65,7 @@ if ENV['FORCE_LOCAL_SS']
     gem 'social_stream-events'
   end
 else
-  git 'git://github.com/ging/social_stream.git', branch: "vish", ref: "1177d131568b3d7b3cb5e1abf54c934487dd2685" do
+  git 'git://github.com/ging/social_stream.git', branch: "vish", ref: "6e4341c64ae3a470acd0ab29c48d2d72fd6fdd08"  do
     gem 'social_stream-base'
     gem 'social_stream-documents'
     gem 'social_stream-linkser'
@@ -74,6 +76,9 @@ end
 
 #for INVITATION ONLY
 gem 'devise_invitable', '= 1.1.8'
+
+#CAS
+gem 'devise_cas_authenticatable', '= 1.7.1'
 
 # $ export FORCE_LOCAL_SCORM=scormGemPath
 if ENV['FORCE_LOCAL_SCORM']
@@ -91,8 +96,6 @@ group :development do
   gem 'unicorn', '= 4.8.3'
   gem 'capistrano', '= 2.14.2'
   gem 'forgery', '= 0.6.0'
-  gem 'launchy'
-  gem 'poltergeist'
 end
 
 group :test do

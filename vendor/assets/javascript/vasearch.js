@@ -166,7 +166,7 @@ VASearch.UI = (function(V,undefined){
       $(scaffold).append('<div class="resultImageWrapper"><a target="'+targetAttr+'" href="'+result.url+'"><img class="resultImage" src="'+result.avatar_url+'"></a></div>');
     }
     if((result.title)&&(result.url)){
-      $(scaffold).append('<div class="resultTitle"><a target="'+targetAttr+'" href="'+result.url+'">'+result.title+'</a></div>');
+      $(scaffold).append('<h6 class="resultTitle"><a target="'+targetAttr+'" href="'+result.url+'">'+result.title+'</a></h6>');
     }
     if((result.author)&&(result.author_profile_url)&&(result.instance)){
       $(scaffold).append('<div class="resultAuthor"><span class="by">'+V.Utils.getTrans("i.by")+'</span> <a target="'+targetAttr+'" href="'+result.author_profile_url+'">'+result.author+'</a><br/>' + V.Utils.getTrans("i.in") +' <a target="'+targetAttr+'" href="'+result.instance+'">' + result.instance + '</a></div>');
@@ -255,6 +255,11 @@ VASearch.UI = (function(V,undefined){
     var language = $("#asearch_settings [asparam='language']").val();
     if(language.trim()!=""){
       settings.language = language;
+    }
+
+    var license = $("#asearch_settings [asparam='license']").val();
+    if(license.trim()!=""){
+      settings.license = license;
     }
 
     settings.qualityThreshold = $("#asearch_settings [asparam='qualityThreshold']").val();
@@ -397,6 +402,10 @@ VASearch.Core = (function(V,undefined){
 
     if(settings.language){
       query += "&language="+settings.language;
+    }
+
+    if(settings.license){
+      query += "&license="+settings.license;
     }
 
     if(settings.qualityThreshold){

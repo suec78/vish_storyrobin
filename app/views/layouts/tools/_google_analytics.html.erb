@@ -1,0 +1,20 @@
+<% if Vish::Application.config.ganalytics %>
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', '<%=Vish::Application.config.APP_CONFIG["ganalytics"]["trackingID"]%>']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); 
+      ga.type = 'text/javascript'; 
+      ga.async = true;
+      ga.src = '//stats.g.doubleclick.net/dc.js';
+      var s = document.getElementsByTagName('head')[0]; 
+      s.appendChild(ga);
+    })();
+  </script>
+
+  <script src="/assets/riveted.min.js"></script>
+  <script>riveted.init({idleTimeout: 60});</script>
+  
+<% end %>

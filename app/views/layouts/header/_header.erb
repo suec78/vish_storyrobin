@@ -1,0 +1,20 @@
+<% if user_signed_in? %>
+  <% availableModels = available_models %>
+  <% availableServices = available_services %>
+  <%= render :partial => 'layouts/header/header_signed_in' %>
+    <!-- load modals -->
+    <% if availableModels.include? "Event" %>
+      <%= render partial: 'events/form' %>
+    <% end %>
+    <% if availableModels.include? "Resource" %>
+      <%= render partial: 'repositories/form' %>
+    <% end %>
+    <% if availableModels.include? "Category" %>
+      <%= render partial: 'categories/form', :locals => { :div_id => "AddCategoryHeader", :remote => true} %>
+    <% end %>
+    <% if Vish::Application.config.invitations %>
+      <%= render partial: 'devise/invitations/new_modal' %>
+    <% end %> 
+<% else %>
+  <%= render :partial => 'layouts/header/header_signed_out' %>
+<% end %>

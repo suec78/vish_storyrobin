@@ -1,0 +1,43 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+<title><%= yield(:title).empty? ? t('site.current.title') : yield(:title) %></title>
+<meta name="keywords" content="<%= yield(:keywords) %>">
+<meta name="description" content="<%= yield(:description) %>">
+
+<meta property="og:title" content="<%= yield(:title).empty? ? t('site.current.title') : yield(:title) %>">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="<%=Vish::Application.config.name%>">
+<meta property="og:url" content="<%= request.original_url %>">
+<meta property="og:image" content="<%= yield(:og_image).empty? ? Vish::Application.config.full_domain+'/assets/frontpage/logo-04.png' : yield(:og_image) %>">
+<meta property="og:description" content="<%= yield(:description) %>">
+
+<meta property="og:locale" content="<%=get_facebook_locales(I18n.locale)%>">
+
+<%I18n.available_locales.each do |i| %>
+  <meta property='og:locale:alternate' content='<%=get_facebook_locales(i)%>'>
+<%end%>
+
+<% if Vish::Application.config.facebook %>
+  <meta property="fb:admins" content="<%=Vish::Application.config.APP_CONFIG['facebook']["accountID"]%>"/>
+  <meta property="fb:app_id" content="<%=Vish::Application.config.APP_CONFIG['facebook']["appID"]%>"/>
+<% end %>
+
+<% if Vish::Application.config.gwebmastertools %>
+  <meta name="google-site-verification" content="<%=Vish::Application.config.APP_CONFIG['gwebmastertools']["site-verification"]%>"/>
+<% end %>
+
+<%=yield(:alternate_urls)%>
+<% unless yield(:canonical).blank? %>
+	<link rel="canonical" href="<%=yield(:canonical)%>">
+<%end%>
+
+
+<%= favicon_link_tag "icons/favicon.ico" %>
+<%= stylesheet_link_tag "application" %>
+
+<% if protect_against_forgery? %>
+  <%= csrf_meta_tag %>
+<% end %>
+
+<%= yield :headers %>

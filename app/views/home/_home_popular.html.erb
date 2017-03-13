@@ -5,7 +5,7 @@
 
 <script>
   <%if request.xhr?%>
-    pageless_state.home.url = "/home?tab=home&ids_to_avoid=<%=ids_to_avoid.join(',')%>";
+  	pageless_state.home.url = "/home?tab=home&ids_to_avoid=<%=ids_to_avoid.join(',')%>";
     force_update_pageless("home", <%=resources.num_pages%>, <%=resources.current_page%>);
   <%else%>
     document.addEventListener("DOMContentLoaded", function(){  
@@ -13,4 +13,5 @@
       force_update_pageless("home", <%=resources.num_pages%>, <%=resources.current_page%>);
     });
   <%end%>
+	
 </script>

@@ -3,13 +3,22 @@
 ActivityObject.class_eval do
   has_many :spam_reports
   has_and_belongs_to_many :wa_resources_galleries
-  has_one :contribution
+  belongs_to :license
   has_one :lo_interaction
-
+  has_many :contest_submissions
+  has_many :contest_categories, :through => :contest_submissions
+  has_many :contests, :through => :contest_categories
+  
+  before_validation :fill_license
+  before_validation :fill_license_attribution
+  before_validation :check_original_author
   before_save :fill_relation_ids
   before_save :fill_indexed_lengths
+  before_save :save_tag_array_text
   after_destroy :destroy_spam_reports
-  after_destroy :destroy_contribution
+  after_destroy :destroy_wa_activities
+  after_destroy :destroy_contributions
+  after_destroy :destroy_contest_submissions
 
   has_attached_file :avatar,
     :url => '/:class/avatar/:id.:content_type_extension?style=:style',
@@ -17,6 +26,70 @@ ActivityObject.class_eval do
     :styles => SocialStream::Documents.picture_styles
 
   validates_attachment_content_type :avatar, :content_type =>["image/jpeg", "image/png", "image/gif", "image/tiff", "image/x-ms-bmp"], :message => 'Avatar should be an image. Non supported format.'
+  
+  validate :has_valid_license
+
+  def has_valid_license
+   unless self.should_have_license?
+      true
+    else
+      if self.license.nil?
+        errors[:base] << "Licence can't be blank"
+      else
+        if self.public_scope? and self.license.private?
+          errors[:base] << "Resources with public scope can't have private licenses"
+        else
+          oldLicense = nil
+          oldLicense = License.find_by_id(self.license_id_was) unless self.license_id_was.nil?
+          if !oldLicense.nil? and oldLicense.public? and self.license_id != oldLicense.id
+            errors[:base] << "Public licenses can't be changed"
+          else
+            if self.license.key == "other"
+              if self.license_custom.blank?
+                errors[:base] << "Custom license must be specified"
+              elsif !self.license_custom_was.blank? and self.license_custom_was != self.license_custom
+                errors[:base] << "Custom license can't be changed"
+              else
+                true
+              end
+            else
+              true
+            end
+          end
+        end
+      end
+    end
+  end
+
+  validate :has_valid_original_author
+
+  def has_valid_original_author
+    if !self.should_have_license? or self.original_author.nil? or self.new_record?
+      true
+    else
+      if self.original_author_was != self.original_author
+        errors[:base] << "Author can't be changed after publishing a resource"
+      else
+        true
+      end
+    end
+  end
+
+  validate :has_valid_license_attribution
+
+  def has_valid_license_attribution
+    unless self.should_have_license?
+      true
+    else
+      if self.original_author.nil?
+        true
+      else
+        if self.license.requires_attribution? and self.license_attribution.blank?
+          errors[:base] << "This license requires an attribution link"
+        end
+      end
+    end
+  end
 
   scope :with_tag, lambda { |tag|
     ActivityObject.tagged_with(tag).where("scope=0").order("ranking DESC")
@@ -28,6 +101,9 @@ ActivityObject.class_eval do
 
   attr_accessor :score
   attr_accessor :score_tracking
+  attr_accessor :filtered
+  attr_accessor :tag_array_cached
+  
   
   def public?
     !private? and self.relation_ids.include? Relation::Public.instance.id
@@ -45,15 +121,90 @@ ActivityObject.class_eval do
     self.scope == 1
   end
 
-  #Calculate quality score (in a 0-10 scale) 
+  def should_have_license?
+    return ((self.object_type.is_a? String) and (["Document", "Excursion", "Scormfile", "Imscpfile", "Webapp", "Workshop", "Writing"].include? self.object_type))
+  end
+
+  def should_have_authorship?
+    return self.should_have_license?
+  end
+
+  def resource?
+    #"Actor", "Post", "Category", "Document", "Excursion", "Scormfile", "Imscpfile", "Link", "Webapp", "Comment", "Event", "Embed", "Workshop", "Writing"
+    return ((self.object_type.is_a? String) and (["Category", "Document", "Excursion", "Scormfile", "Imscpfile", "Link", "Webapp", "Event", "Embed", "Workshop", "Writing"].include? self.object_type))
+  end
+
+  def document?
+    self.object_type == "Document"
+  end
+
+  def linked?
+    return ((self.object_type.is_a? String) and (["Embed", "Link"].include? self.object_type))
+  end
+  
+  def original_author_name
+    self.original_author or self.author.name
+  end
+
+  def default_license_attribution
+    if self.object_type == "Actor" and !self.object.nil?
+      self.object.name + " (" + self.getUrl + ")"
+    elsif self.respond_to? "owner" and !self.owner.nil?
+      self.owner.name + " (" + self.owner.getUrl + ")"
+    end
+  end
+
+  def license_name(locale=nil)
+    if self.should_have_license? and !self.license.nil?
+      if self.license.key != "other"
+        self.license.name(locale)
+      elsif !self.license_custom.blank?
+        self.license_custom
+      end
+    end
+  end
+
+  def downloadable?
+    self.allow_download
+  end
+
+  def commentable?
+    self.allow_comment
+  end
+
+  def clonable?
+    unless self.allow_clone
+      return false
+    end
+
+    if self.license and (self.license.no_derivatives? or self.license.private?)
+      return false
+    end
+
+    true
+  end
+
+  def evaluable?
+    self.resource? and !Vish::Application.config.APP_CONFIG['loep'].nil?
+  end
+
+  def has_analytics?
+    self.resource? and !self.interaction_qscore.nil? and !self.lo_interaction.nil?
+  end
+
+  #Calculate quality score
   def calculate_qscore
+    return self.object.calculate_qscore if self.object_type=="Category" and !self.object.nil?
+
     #self.reviewers_qscore is the LORI score in a 0-10 scale
     #self.users_qscore is the WBLT-S score in a 0-10 scale
     #self.teachers_qscore is the WBLT-T score in a 0-10 scale
+
+    metricParams = Vish::Application::config.metrics_qscore
     qscoreWeights = {}
-    qscoreWeights[:reviewers] = BigDecimal(0.6,6)
-    qscoreWeights[:users] = BigDecimal(0.3,6)
-    qscoreWeights[:teachers] = BigDecimal(0.1,6)
+    qscoreWeights[:reviewers] = BigDecimal(metricParams[:w_reviewers],6)
+    qscoreWeights[:users] = BigDecimal(metricParams[:w_users],6)
+    qscoreWeights[:teachers] = BigDecimal(metricParams[:w_teachers],6)
 
     unless (self.reviewers_qscore.nil? and self.users_qscore.nil? and self.teachers_qscore.nil?)
       if self.reviewers_qscore.nil?
@@ -93,7 +244,7 @@ ActivityObject.class_eval do
       overallQualityScore = 5
     end
 
-    #Translate it to a scale of [0,1000000]
+    #Translate score from a scale of [0,10] to a scale of [0,1000000]
     overallQualityScore = [overallQualityScore * 100000, 999999].min
 
     self.update_column :qscore, overallQualityScore
@@ -132,7 +283,7 @@ ActivityObject.class_eval do
     #Common fields
     searchJson =  {
       :id => self.getUniversalId(),
-      :type => self.getType(),
+      :type => self.getType,
       :created_at => self.created_at.strftime("%d-%m-%Y"),
       :updated_at => self.updated_at.strftime("%d-%m-%Y"),
       :title => title,
@@ -158,6 +309,10 @@ ActivityObject.class_eval do
 
     unless resource.language.blank?
       searchJson[:language] = resource.language
+    end
+
+    if resource.should_have_license? and !resource.license.nil?
+      searchJson[:license] = resource.license_name
     end
 
     avatarUrl = getAvatarUrl
@@ -223,6 +378,10 @@ ActivityObject.class_eval do
     self.object.class.name
   end
 
+  def tag_array
+    self.tag_array_text.split(",")
+  end
+
   def getUrl
     begin
       if self.object.nil?
@@ -248,6 +407,14 @@ ActivityObject.class_eval do
     end
   end
 
+  def getMetadataUrl
+    if ["Excursion"].include?(self.object_type)
+     return self.getUrl + "/metadata.xml"
+    else
+      return Vish::Application.config.full_domain + "/activity_objects/" + self.id.to_s + "/metadata.xml"
+    end
+  end
+
   def getFullUrl(controller)
     relativePath = nil
     absolutePath = nil
@@ -258,7 +425,7 @@ ActivityObject.class_eval do
       if ["Picture","Swf"].include? resource.class.name
         relativePath = resource.file.url
       end
-    elsif ["Scormfile","Webapp"].include? resource.class.name
+    elsif ["Scormfile", "Imscpfile", "Webapp"].include? resource.class.name
       absolutePath = resource.lourl
     elsif ["Excursion"].include? resource.class.name
       # relativePath = Rails.application.routes.url_helpers.excursion_path(resource, :format=> "full")
@@ -285,7 +452,7 @@ ActivityObject.class_eval do
 
     if [resource.class.name,resource.class.superclass.name].include? "Document"
       relativePath = resource.file.url
-    elsif ["Scormfile","Webapp"].include? resource.class.name
+    elsif resource.respond_to?("zipurl")
       absolutePath = resource.zipurl
     elsif ["Excursion"].include? resource.class.name
       # relativePath = Rails.application.routes.url_helpers.excursion_path(resource, :format=> "scorm")
@@ -346,13 +513,17 @@ ActivityObject.class_eval do
   def metadata
     metadata = {}
 
+    unless self.object_type.nil?
+      metadata[I18n.t("activity_object.type")] = I18n.t("document.info.types." + self.object_type.downcase, :default => self.object_type)
+    end
+
     unless self.title.nil?
       metadata[I18n.t("activity_object.title")] = self.title
     end
 
     unless self.description.nil?
       metadata[I18n.t("activity_object.description")] = self.description
-    end
+    end  
 
     if !self.tag_list.nil? and self.tag_list.is_a? Array
       metadata[I18n.t("activity_object.keywords")] = self.tag_list.join(", ")
@@ -364,6 +535,29 @@ ActivityObject.class_eval do
 
     unless self.age_range.blank?
       metadata[I18n.t("activity_object.age_range")] = self.age_min.to_s + " - " + self.age_max.to_s
+    end
+
+    unless self.linked?
+      unless self.original_author_name.blank?
+        metadata[I18n.t("activity_object.author")] = self.original_author_name
+      end
+      unless self.author.nil? or self.author.name.nil? or self.original_author_name==self.author.name
+        metadata[I18n.t("activity_object.author_uploaded_by")] = self.author.name
+      end
+    else
+      #Links
+      unless self.original_author.nil?
+        metadata[I18n.t("activity_object.author")] = self.original_author_name
+      end
+      unless self.author.nil? or self.author.name.nil?
+        metadata[I18n.t("document.info.linked_by")] = self.author.name
+      end
+    end
+
+    if self.should_have_license?
+      unless self.license.nil?
+        metadata[I18n.t("activity_object.license")] = self.license_name
+      end
     end
 
     if self.object_type == "Excursion"
@@ -404,6 +598,10 @@ ActivityObject.class_eval do
     else
       nil
     end
+  end
+
+  def generate_LOM_metadata(options)
+    Lom.generateMetadata(self,options)
   end
 
   ##############
@@ -456,15 +654,19 @@ ActivityObject.class_eval do
     (aosRecent + aosPopular).map{|ao| ao.object}
   end
 
-  def self.getIdsToAvoid(ids_to_avoid=[],actor=nil)
-    ids_to_avoid = ids_to_avoid || []
+  def self.getIdsToAvoid(ids_to_avoid_param=[],actor=nil)
+    if ids_to_avoid_param.is_a? Array
+      ids_to_avoid = ids_to_avoid_param.clone rescue []
+    else
+      ids_to_avoid = []
+    end
 
-    if !actor.nil?
+    unless actor.nil?
       ids_to_avoid.concat(ActivityObject.authored_by(actor).map{|ao| ao.id})
       ids_to_avoid.uniq!
     end
 
-    if !ids_to_avoid.is_a? Array or ids_to_avoid.empty?
+    if ids_to_avoid.empty?
       #if ids=[] the queries may returns [], so we fill it with an invalid id (no excursion will ever have id=-1)
       ids_to_avoid = [-1]
     end
@@ -497,14 +699,15 @@ ActivityObject.class_eval do
   def self.getObjectFromUrl(url)
     return nil if url.blank?
 
-    urlregexp = /([ ]|^)(http[s]?:\/\/([^\/]+)\/([a-zA-Z0-9]+)\/([0-9]+))([? ]|$)/
+    urlregexp = /([ ]|^)(http[s]?:\/\/[^\/]+\/([a-zA-Z0-9]+)\/([0-9]+))([ ]|$)/
     regexpResult = (url =~ urlregexp)
 
-    return nil if regexpResult.nil? or $3.nil? or ($3 != Vish::Application.config.APP_CONFIG["domain"]) or $4.nil? or $5.nil?
+    return nil if regexpResult.nil? or $3.nil? or $4.nil?
+
+    modelName = $3.singularize.capitalize
+    instanceId = $4
 
     begin
-      modelName = $4.singularize.capitalize
-      instanceId = $5
       resource = getObjectFromGlobalId(modelName + ":" + instanceId)
     rescue
       resource = nil
@@ -513,22 +716,30 @@ ActivityObject.class_eval do
     return resource
   end
 
+  def self.getAllResources
+    ActivityObject.where("object_type in (?)", VishConfig.getAvailableResourceModels)
+  end
+
+  def self.getAllPublicResources
+    getAllResources.where("scope=0")
+  end
+
   def self.getResourceCount
-    getCount(["Workshop","Excursion", "Document", "Webapp", "Scormfile","Link","Embed"])
+    self.getAllResources.count
   end
 
-  def self.getCount(models=[])
-    ActivityObject.where("object_type in (?)", models).count
+  def save_tag_array_text
+    self.tag_array_text = self.tags.map{|tag| tag.plain_name}.uniq.reject{|tag| Vish::Application.config.stoptags.include? tag}.join(",") if self.tags_length > 0
   end
 
-
+  
   private
 
   def fill_relation_ids
     unless self.object.nil?
       if self.object_type != "Actor"
         #Resources
-        unless ["Excursion","Workshop"].include? self.object_type and self.object.draft==true
+        unless self.object.respond_to? "draft" and self.object.draft==true
           #Always public except drafts
           self.object.relation_ids = [Relation::Public.instance.id]
           self.relation_ids = [Relation::Public.instance.id]
@@ -559,6 +770,28 @@ ActivityObject.class_eval do
     end
   end
 
+  def fill_license
+    if self.should_have_license? and self.license_id.nil?
+      if self.private_scope?
+        self.license_id = License.find_by_key("private").id
+      else
+        self.license_id = License.default.id
+      end
+    end
+  end
+
+  def fill_license_attribution
+    if self.should_have_license? and self.respond_to? "owner"
+      if self.license_attribution.nil? and self.original_author.nil? and !self.owner.nil?
+        self.license_attribution = self.default_license_attribution
+      end
+    end
+  end
+
+  def check_original_author
+    self.original_author = nil if self.author and self.author.name == self.original_author
+  end
+
   def after_update_qscore
     if Vish::Application.config.APP_CONFIG["qualityThreshold"] and Vish::Application.config.APP_CONFIG["qualityThreshold"]["create_report"] and !self.qscore.nil?
       overallQualityScore = (self.qscore/100000.to_f)
@@ -578,9 +811,21 @@ ActivityObject.class_eval do
     end
   end
 
-  def destroy_contribution
-    unless self.contribution.nil?
-      self.contribution.destroy
+  def destroy_contributions
+    Contribution.find_all_by_activity_object_id(self.id).each do |c|
+      c.destroy
+    end
+  end
+
+  def destroy_contest_submissions
+    ContestSubmission.find_all_by_activity_object_id(self.id).each do |c|
+      c.destroy
+    end
+  end
+
+  def destroy_wa_activities
+    WaResource.find_all_by_activity_object_id(self.id).each do |wa|
+      wa.destroy
     end
   end
 

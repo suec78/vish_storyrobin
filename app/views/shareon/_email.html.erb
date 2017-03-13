@@ -1,5 +1,3 @@
-  <a href="mailto:?subject=<%= t('excursion.invite.email.subject', :title => CGI::escape(title || "")) %>&amp;body=<%= t('excursion.invite.email.body', { :url => url, :name => CGI::escape(name) }) %>"> 
-  	<button class="with_tooltip btn share_email_button" title="<%=t('sharing.email')%>">  
-	  <i class="icon-envelope"></i>
-	</button>
-  </a>
+ <a class="btn btn-xs btn-secundary" href="mailto:?subject=<%= t('sharing.email.subject', :url=> Vish::Application.config.APP_CONFIG["domain"], :title => url_encode(title || "")) %>&amp;body=<%= t('sharing.email.body', { :url => url, :name => url_encode(name) }) %>" title="<%=t('sharing.email.title')%>">
+	<i class="fa fa-envelope"></i><%=t('sharing.email.action') %>
+</a>

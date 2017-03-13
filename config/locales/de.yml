@@ -1,5 +1,5 @@
 de:
-  about: 
+  about:
     contact: "Kontakt"
   activerecord:
     attributes:
@@ -8,6 +8,24 @@ de:
         tag: "Interessensbereiche"
   activity:
     empty: "Deine Timeline ist leer"
+    items:
+      infoaction:
+        audio: "Audio hinzugefügt"
+        category: "Kategorie hinzugefügt"
+        document: "Dokument hinzugefügt"
+        embed: "Embed hinzugefügt"
+        event: "Event hinzugefügt"
+        excursion: "Exkursion hinzugefügt"
+        file: "Datei hinzugefügt"
+        link: "Link hinzugefügt"
+        picture: "Bild hinzugefügt"
+        scormfile: "SCORM-Datei hinzugefügt"
+        swf: "SWF hinzugefügt"
+        video: "Video hinzugefügt"
+        webapp: "Web-App hinzugefügt"
+        workshop: "Workshop hinzugefügt"
+        writing: "Text hinzugefügt"
+        zipfile: "ZIP-Datei hinzugefügt"
     more: "Mehr ansehen..."
     new_user: "Willkommen beim ViSH! Poste und teile deine Ideen, Links, Videos mit deinen Followern."
     newmessage: "Das ist deine Timeline. Du kannst Bilder, Videos, Links und mehr hochladen und teilen."
@@ -39,52 +57,6 @@ de:
   contact:
     pending:
       other: "Folgt dir"
-  contest:
-    moreinfo: "Mehr Information"
-    faq: "Faq"
-    candidates: "KandidatInnen"
-    intro: "Einzelpersonen sowie Organisationen sind zugelassen. Der Wettbewerb ist allen NutzerInnen zugänglich, die sich am ViSH registrieren. Nur vollständige Exkursionen sind zur Teilnahme berechtigt."
-    categories: "Kategorien"
-    categories2: "Mathematik, Physik, Chemie, Biologie, Geographie, Umweltwissenschaften, Ingenieurswissenschaften, Geisteswissenschaften, Naturwissenschaften, Computerwissenschaften."
-    languages_intro: "Sprachen"
-    languages1: "eExkursionen können in folgenden Sprachen eingereicht werden:"
-    languages2: "Englisch, Deutsch, Französisch, Spanisch, Niederländisch, Ungarisch, Rumänisch, Griechisch, Italienisch."
-    register: "Wie kann man sich für den Wettbewerb registrieren"
-    register2: "Die eExkursion muss mit folgendem Schlagwort versehen werden:"
-    register3: "ViSHCompetition2013"
-    register4: "sowie mit dem Schlagwort der Kategorie, in der die eExkursion eingereicht wird"
-    register5: "Eine eExkursion kann in mehreren Kategorien eingereicht werden."
-    timeline: "Zeitrahmen"
-    timeline2: " Beginn des Wettbewerbs"
-    timeline3: " Ende der Einreichfrist"
-    timeline4: " Ende des Auswahlprozesses und Verkündigung der GewinnerInnen"
-    timeline_date: "20. Oktober 2013"
-    timeline_date2: "16. Dezember 2013"
-    timeline_date3: "23. Dezember 2013"
-    criteria: "Auswahlkriterien"
-    criteria2: "Die eExkursionen werden nach ihren 'Favorites' aus der Community gereiht. Die 10 bestgereihten eExkursionen werden nach vordefinierten Kriterien beurteilt"
-    prizes: "Preise"
-    prizes2: "Die GewinnerInnen erhalten Amazon Gutscheine. Für jede Kategorie gibt es einen 1. und einen 2.Preis"
-    prizes3: "Die GesamtgewinnerInnen erhalten zusätzliche Preise"
-    prizes4: "Die 3 GesamtgewinnerInnen werden zur Abschlußkonferenz im Januar 2014 mach Brüssel eingeladen."
-    prizes5: " ist ein Code für Amazon online, der zum Kauf von Material Ihrer Wahl eingesetzt werden kann, z.B. Bücher, kleiner technische Hilfsmittel, etc."
-    prizes_first: "1. Preis 400€ Gutschein "
-    prizes_second: "2. Preis 300€ Gutschein "
-    prizes_third: "3. Preis 200€ Gutschein "
-    amazon: "* Amazon Gutschein "
-    ex_part: "teilnehmende eExkursionen:"
-    filter: "Filter:"
-    All: "Alle"
-    Maths: "Math"
-    Physics: "Physics"
-    Chemistry: "Chemistry"
-    Biology: "Biology"
-    Geography: "Geography"
-    EnvironmentalStudies: "EnvironmentalStudies"
-    Engineering: "Engineering"
-    Humanities: "Humanities"
-    NaturalScience: "NaturalScience"
-    ComputerScience: "ComputerScience"
   devise:
     invalid_login: "Gib bitte deine Email und Passwort ein, um fortzufahren."
   disjunction:
@@ -93,15 +65,6 @@ de:
     document: "Dokument"
     help:
       title: "Ressourcen hochladen"
-      info1_html: "1. Klicke auf <b>Dokumente</b>, <b>Links</b> oder <b>Embed</b> tab.<br>"
-      info2_html: "2. Wenn du ein Dokument hochladen willst, klicke auf <b>browse</b> und wähle das File von deinem Computer aus. Wenn deine Ressource ein Link ist oder woanders eingebunden ist, kannst du es in die Textbox <b>kopieren</b>.<br>"
-      info3_html: "3. Gib einen <b>Titel</b> und eine <b>Bechreibung</b> ein.<br>"
-      info4_html: "4. Füge zugehörige <b>Tags</b> zu deiner Ressource. Deine Interessensgebiete wurden automatisch zugeordnet. Du kannst sie löschen oder neue tags dazufügen.<br>"
-      info5_html: "5. Wähle eine <b>Sprache</b>, falls nötig.<br>"
-      info6_html: "6. Wähle eine <b>Alters </b>gruppe. Diese Information wird für Empfehlungen verwendet.<br>"
-      info7_html: "7. Wenn du ein Live Streaming Video einbauen möchtest, klicke auf <b>Live</b> Option.<br>"
-      info8_html: "8. Zuletzt klicke auf <b> Speichern </b> um deine Ressource hochzuladen."
-    how: "Wie man eine Ressource teilt"
     info:
       title: "Titel"
       description: "Beschreibung"
@@ -344,10 +307,14 @@ de:
   sign_up: "Registrieren"
   site:
     current:
-      description: "A meeting point for scientists and teachers based around the idea of virtual excursions"
-      keywords: "VisHub,virtual,excursion"
-      title: "Virtual Science Hub"
-    name: "Virtual Science Hub"
+      description: "ViSH is a social and collaborative site for creating and sharing knowledge resources for the realization of educational activities."
+      keywords: "e-Learning, Technology Enhanced Learning, education, Learning Objects, repository, resources, authoring tool, catalogue, search"
+      title: "ViSH"
+      search: "ViSH - Search"
+      browse: "ViSH - Explore"
+      msg: "ViSH - Messages"
+      activity: "ViSH - Activities"
+    name: "ViSH"
   swf:
     confirm_delete: "SWF löschen?"
   today: "Heute"
@@ -427,8 +394,6 @@ de:
     details:
       info: "Info"
     download_explanation: "speichere diese Ressource auf deinem Gerät"
-    helpquiz:
-      info1_html: "1. Hilfe bei Quiz <br>"
     language:
       option1: "(sprachunabhängig)"
     leyend:
@@ -605,12 +570,6 @@ de:
     error: "Es ist ein Fehler aufgetreten. Bitte Code noch einmal eingeben."
     subtitle: "Den Code in die Box eingeben:"
     title: "Captcha"
-  site:
-    current:
-      description: "Ein Ort für WissenschaferInnen und LehrerInnen rund um das Konzept der virtuellen Exkursionen"
-      keywords: "VisHub,virtuell,Exkursion"
-      title: "Virtual Science Hub"
-    name: "Virtual Science Hub"
   spam:
     error_content: "In der Exkursion ist ein Fehler aufgetreten"
     placeholder: "Was ist das Problem?"
@@ -684,6 +643,7 @@ de:
     actions:
       add: "Hinzufügen von text"
     confirm_delete: "Löschen Sie schreiben?"
+    new: "Neue text"
     title3: "Schreiben Sie den Text, die Sie hinzufügen möchten"
   yesterday: "Gestern"
   zipfile:

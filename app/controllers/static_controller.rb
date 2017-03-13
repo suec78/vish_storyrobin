@@ -7,7 +7,15 @@ class StaticController < ApplicationController
     send_file "#{Rails.root}/public/vish_user_manual.pdf", :type => 'application/pdf'
   end
 
-  def legal_notice
+  def download_perm_request
+    #TODO XXX, send different form depending on lang
+    send_file "#{Rails.root}/public/vish_solicitud_crear_grupos_privados.pdf", :type => 'application/pdf'
+  end
+
+  def privacy_policy
+  end
+
+  def terms_of_use
   end
 
   def overview

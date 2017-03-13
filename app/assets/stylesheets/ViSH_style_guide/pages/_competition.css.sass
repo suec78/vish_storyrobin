@@ -1,0 +1,120 @@
+#competition
+  .row
+    margin: 0
+    padding: 40px
+    h2
+      margin: 0 0 20px 0 !important
+    h5
+      font-weight: 400
+      font-family: sans-serif
+      margin: 10px 0 20px 0 !important
+    .bt_join
+      i
+        margin: 0 5px 0 0
+        padding: 0px
+        line-height: 0.1em
+        font-size: 1.2em
+    .steps
+      border-left: 3px solid $brand-primary
+      min-height: 100px
+      margin: 20px 0 0 0
+      .step-text
+        padding: 10px 30px 0 0
+
+  .competition_header
+    position: absolute
+    z-index: 1000
+    width: 100%
+    top: 49px
+    left: 0
+    .competition_cover
+      height: 200px
+      width: 100%
+      overflow: hidden
+      background-color: $gray-light
+      img
+        width: 100%
+    .competition_info
+      background-color: white
+      opacity: 0.9
+      .competition_menu
+        padding: 0
+        margin: 0
+        a
+          color: $gray-light
+          &:hover
+            color: $gray-dark
+      .competition_social
+        text-align: right
+        i
+          padding: 0 0 10px 10px
+  .competition_content
+    position: relative
+    top: 350px
+
+#joined_resources_all
+  .items
+    margin: 20px 0 40px 0
+    display: block
+    float: left
+
+//-------------------------------
+//2 rows of items
+//-------------------------------
+#joined_resources
+  .some_items
+    width: 100%
+    display: block
+    margin: 20px 0 40px 0
+    float: left
+    @media (max-width: $screen-xs-max)
+      margin-bottom: 0
+
+@media (min-width: 1751px)
+  .some_items
+    .box-item
+      display: none
+    .box-item:nth-of-type(-n+15)
+      display: block
+
+@media (min-width: 1501px) and (max-width: 1750px)
+  .some_items
+    .box-item
+      display: none
+    .box-item:nth-of-type(-n+13)
+      display: block
+
+@media (min-width: 1200px) and (max-width: 1500px)
+  .some_items
+    .box-item
+      display: none
+    .box-item:nth-of-type(-n+11)
+      display: block
+
+@media (min-width: 992px) and (max-width: 1199px)
+  .some_items
+    .box-item
+      display: none
+    .box-item:nth-of-type(-n+9)
+      display: block
+
+@media (min-width: 768px) and (max-width: 991px)
+  .some_items
+    .box-item
+      display: none
+    .box-item:nth-of-type(-n+7)
+      display: block
+
+@media (min-width: 481px) and (max-width: 767px)
+  .some_items
+    .box-item
+      display: none
+    .box-item:nth-of-type(-n+8)
+      display: block
+
+@media (max-width: 480px)
+  .some_items
+    .box-item
+      display: none
+    .box-item:nth-of-type(-n+9)
+      display: block

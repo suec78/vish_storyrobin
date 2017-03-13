@@ -33,9 +33,10 @@ class TrackingSystemEntry < ActiveRecord::Base
 
   def self.trackUIRecommendations(options,request,current_subject)
     return #disable on StoryRobin
+    return unless Vish::Application.config.trackingSystem
     return if isBot?(request)
     return if options.blank? or !options[:recEngine].is_a? String
-    
+
     tsentry = TrackingSystemEntry.new
     tsentry.app_id = "ViSHUIRecommenderSystem"
     tsentry.user_agent = request.user_agent
@@ -53,6 +54,7 @@ class TrackingSystemEntry < ActiveRecord::Base
 
   def self.trackRLOsInExcursions(rec,excursion,request,current_subject)
     return #disable on StoryRobin
+    return unless Vish::Application.config.trackingSystem
     return if request.format == "full"
     return if isBot?(request)
 
