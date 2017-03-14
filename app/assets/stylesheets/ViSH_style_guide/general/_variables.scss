@@ -10,7 +10,7 @@ $bootstrap-sass-asset-helper: (twbs-font-path("") != unquote('twbs-font-path("")
 //
 //## Gray and brand colors for use across Bootstrap.
 $black:                  #000000;
-$gray-darker-extra:      #333333;
+$gray-darker-extra:      #555;
 $gray-darker:            #353535;
 $gray-dark:              #5E5E5E;
 $gray:                   #9B9B9B;
@@ -41,7 +41,7 @@ $auxiliarColor:          $white;
 // ## Settings for some of the most global styles.
 
 //** Background color for `<body>`.
-$body-bg:               #E7E7E7 !default;
+$body-bg:               #E6F0FF !default;
 //** Global text color on `<body>`.
 $text-color:            $gray-dark !default;
 

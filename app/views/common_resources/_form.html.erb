@@ -89,14 +89,7 @@
           <%= f.label :avatar, t('document.leyend.avatar') %>
           <%= f.file_field :avatar %>
         </section>
-      <%end%>
-
-      <%if resource.class.name=="Workshop" %>
-        <section class="banner">
-          <%= f.label :banner, t('workshop.actions.add_banner') %>(<%=t('workshop.actions.add_banner_help') %>)
-          <%= f.file_field :banner %>
-        </section>
-      <%end%>
+      <%end%>      
 
       <section class="language">
         <%= f.label :language, t('document.leyend.language') %>

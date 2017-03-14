@@ -1,5 +1,5 @@
 <div class="workshop-edit">
-  
+
   <!-- toolbar edit-->
   <%= render partial: 'edit_toolbar' %>
 
@@ -13,10 +13,6 @@
           </li>
         </ul>
       </div>
-      <% if @workshop.banner.present? %>
-        <!--banner-->
-        <div style='background-image: url(<%=@workshop.banner.url(:large)%>);width: 100%;height: 100px;' class=""></div>
-      <% end %>
       <!--avatar-->
       <div class="container-img_WS">
         <div style='background-image: url(<%=@workshop.thumbnail_url%>)' class="img-box resource-center workshop_thumbnail"></div>
@@ -41,7 +37,7 @@
 
   <ul class="workshop_activities_list workshop_activities_list_edit">
     <% @workshop_activities.each do |workshop_activity| %>
-      <% 
+      <%
         object = workshop_activity.object
         className = object.class.to_s
         classNameUnderscore = className.underscore
@@ -83,7 +79,7 @@
     $("li.toggleWorkshopActivity").click(function(e){
       var contentDiv = $(e.target).parents(".wa_activity_wrapper_edit").find(".layout_workshop");
       var minifiedDiv = $(e.target).parents(".wa_activity_wrapper_edit").find(".wa_activity_edit_minified");
-      
+
       if($(contentDiv).hasClass("wa_activity_closed")){
         $(contentDiv).removeClass("wa_activity_closed").addClass("wa_activity_open");
         $(contentDiv).show();
@@ -296,4 +292,3 @@
   <% end %>
 
 </div>
-

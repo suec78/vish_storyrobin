@@ -160,6 +160,14 @@ ActiveRecord::Schema.define(:version => 20170308141313) do
     t.integer "actor_id"
   end
 
+  create_table "announcements", :force => true do |t|
+    t.text     "message"
+    t.datetime "starts_at"
+    t.datetime "ends_at"
+    t.datetime "created_at", :null => false
+    t.datetime "updated_at", :null => false
+  end
+
   create_table "audiences", :force => true do |t|
     t.integer "relation_id"
     t.integer "activity_id"
@@ -333,7 +341,7 @@ ActiveRecord::Schema.define(:version => 20170308141313) do
     t.integer  "slide_count",             :default => 1
     t.text     "thumbnail_url"
     t.boolean  "draft",                   :default => false
-    t.text     "offline_manifest",        :default => ""
+    t.text     "offline_manifest"
     t.datetime "scorm2004_timestamp"
     t.datetime "pdf_timestamp"
     t.string   "attachment_file_name"
@@ -456,6 +464,16 @@ ActiveRecord::Schema.define(:version => 20170308141313) do
   end
 
   add_index "notifications", ["conversation_id"], :name => "index_notifications_on_conversation_id"
+
+  create_table "pages", :force => true do |t|
+    t.string   "name"
+    t.string   "permalink"
+    t.text     "content"
+    t.datetime "created_at", :null => false
+    t.datetime "updated_at", :null => false
+  end
+
+  add_index "pages", ["permalink"], :name => "index_pages_on_permalink"
 
   create_table "pdfexes", :force => true do |t|
     t.datetime "created_at",                             :null => false

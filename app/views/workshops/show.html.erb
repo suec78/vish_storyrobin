@@ -21,9 +21,7 @@
   </div>
 
   <!--++++++++++++++++header+++++++++++++++++++++++-->
-  <% if @workshop.banner.present? %>
-    <div style='background-image: url(<%=@workshop.banner.url(:large)%>);' class="workshop_header"></div>
-  <% end %>
+  
   <div class="wa_activity_wrapper wa_activity_wrapper_show header_workshop">
     <div class="layout_workshop">
       <!--avatar-->
@@ -59,7 +57,7 @@
     <% @workshop_activities.each do |workshop_activity| %>
 
       <div class="wa_activity_wrapper wa_activity_wrapper_show">
-        
+
         <% if workshop_activity.wa_type=="WaResource"  %>
           <div id="effect<%=workshop_activity.id%>" class="resources_WS desplegado" > <!--only for resources-->
         <%end%>
@@ -112,4 +110,3 @@
     return false;
   });
 <%end%>
-  
