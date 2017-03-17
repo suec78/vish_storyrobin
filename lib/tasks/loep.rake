@@ -49,9 +49,10 @@ namespace :loep do
     puts "Getting quality metrics from LOEP and updating ViSH database"
     puts "#####################################"
 
-    Excursion.all.each do |ex|
-      VishLoep.getActivityObjectMetrics(ex.activity_object){ |response|
-        puts "Metrics for excursion: " + ex.id.to_s
+    aos = (Excursion.all.map{|ex| ex.activity_object} + Workshop.all.map{|w| w.activity_object})
+    aos.each do |ao|
+      VishLoep.getActivityObjectMetrics(ao){ |response|
+        puts "Metrics for ao: " + ao.getGlobalId
         puts response
       }
       sleep 2
