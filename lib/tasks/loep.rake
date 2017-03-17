@@ -32,8 +32,10 @@ namespace :loep do
     #Excursions with iteractions
     # excursions = LoInteraction.all.map{|i| i.activity_object.object}.select{|o| o.object_type == "Excursion" and o.draft===false}
 
+    #All published workshops
+    workshops = Workshop.all.select{ |w| w.draft==false }
     
-    aos = excursions.map{|ex| ex.activity_object}
+    aos = (excursions.map{|ex| ex.activity_object} + workshops.map{|w| w.activity_object})
     VishLoep.sendActivityObjects(aos,{:sync=>true,:trace=>true})
     # Async
     # VishLoep.sendActivityObjects(aos,{:async=>true,:trace=>true})
