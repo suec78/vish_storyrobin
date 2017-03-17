@@ -48,13 +48,11 @@
                   </label>
                 </div>
                 <%= f.submit t(:sign_in), :class => ' btn btn-primary'%>
-<<<<<<< HEAD
                 <div class="remember_password">
                   <%= link_to t('devise.links.forgot_password'), new_password_path(:user) %>
+                </div>
+                <div class="request_invitation">
                   <a href="https://storyrobin.wufoo.com/forms/invitation-request/"> Request Invitation </a>
-=======
-                <div class="remember_password"><%= link_to t('devise.links.forgot_password'), new_password_path(:user) %>
->>>>>>> upstream/master
                 </div>
               <% end %>
               <%content_for :javascript do%>
