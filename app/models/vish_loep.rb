@@ -67,6 +67,8 @@ class VishLoep
     lo["name"] = ao.title unless ao.title.blank?
     lo["description"] = ao.description unless ao.description.blank?
     lo["url"] = ao.getUrl
+    loMetadataUrl = ao.getMetadataUrl rescue nil
+    lo["metadata_url"] = loMetadataUrl unless loMetadataUrl.blank?
     lo["tag_list"] = ao.tag_list.join(",") if !ao.tag_list.nil? and ao.tag_list.is_a? Array and !ao.tag_list.blank?
 
     unless ao.language.blank?
@@ -82,7 +84,6 @@ class VishLoep
     when "Excursion"
       lo["lotype"] = "veslideshow"
       lo["technology"] = "html"
-      lo["metadata_url"] = ao.getMetadataUrl
       exJSON = JSON(ao.object.json)
       elemTypes = VishEditorUtils.getElementTypes(exJSON)
       lo["hasText"] = elemTypes.include?("text") ? "1" : "0"
@@ -126,6 +127,9 @@ class VishLoep
       lo["lotype"] = "web"
       lo["technology"] = "html"
       lo["hasWebs"] = "1"
+    when "Workshop"
+      lo["lotype"] = "oilo"
+      lo["technology"] = "html"
     end
 
     #Interactions

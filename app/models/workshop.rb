@@ -39,6 +39,11 @@ class Workshop < ActiveRecord::Base
       post_activity.relation_ids = [Relation::Public.instance.id]
       post_activity.save!
     end
+
+    #If LOEP is enabled, upload the excursion to LOEP
+    unless Vish::Application.config.APP_CONFIG['loep'].nil?
+      VishLoep.sendActivityObject(self.activity_object) rescue nil
+    end
   end
 
 
